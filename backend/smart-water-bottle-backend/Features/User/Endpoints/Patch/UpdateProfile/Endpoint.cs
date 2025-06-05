@@ -45,9 +45,9 @@ public class Endpoint : Endpoint<Request>
                 _logger.LogInformation("Update user information for user: {userId}", user.Id);
                 
                 UpdateUserProperties(user, req);
-                var test = await user.Update<Entities.User>(ct);
+                await user.Update<Entities.User>(ct);
                 
-                _logger.LogInformation("Successfully updated user profile for user: {userId}", test);
+                _logger.LogInformation("Successfully updated user profile for user: {userId}", user.Id);
                 await SendOkAsync(ct);
             }
             catch (Exception ex)
