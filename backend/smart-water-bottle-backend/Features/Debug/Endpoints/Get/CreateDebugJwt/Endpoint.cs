@@ -1,7 +1,6 @@
 ﻿using System.Globalization;
 using FastEndpoints;
 using FastEndpoints.Security;
-using smart_water_bottle_backend.Entities;
 
 namespace smart_water_bottle_backend.Features.Debug.Endpoints.Get.CreateDebugJWT;
 
@@ -34,7 +33,7 @@ public class Endpoint : Endpoint<Request, Response>
 
         _logger.LogInformation("Retrieve user with email: {Email}", req.Email);
         var user = await _supabase
-            .From<User>()
+            .From<Entities.User>()
             .Where(x => x.Email == req.Email)
             .Single(ct);
 
@@ -50,6 +49,8 @@ public class Endpoint : Endpoint<Request, Response>
                     options.User.Claims.Add(("UserId", user.Id));
                     options.User.Roles.Add("Role", user.Role);
                     options.User.Claims.Add(("Username", user.Username ?? ""));
+                    options.User.Claims.Add(("FirstName", req.FirstName ?? ""));
+                    options.User.Claims.Add(("Lastname", req.LastName ?? ""));
                     options.User.Claims.Add(("Email", user.Email ?? ""));
                 });
                 
