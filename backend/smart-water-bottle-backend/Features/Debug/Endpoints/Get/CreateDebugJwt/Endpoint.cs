@@ -51,6 +51,7 @@ public class Endpoint : Endpoint<Request, Response>
                 else
                 {
                     await SendUnauthorizedAsync(ct);
+                    return;
                 }
                 
                 _logger.LogInformation("Sending response with JWT...");
