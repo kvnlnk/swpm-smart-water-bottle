@@ -11,7 +11,6 @@ riderModule.iml
 # IDE settings
 .idea/
 # Rider user settings
-voycar-backend.sln.DotSettings.user
 
 # Logging files
 Logs/
