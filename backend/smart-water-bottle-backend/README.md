@@ -3,6 +3,11 @@
 - [FastEndpoints](https://fast-endpoints.com/)
 - [Supabase](https://supabase.com/)
 
+## Architecture
+
+Built with **Vertical Slice Architecture** using [FastEndpoints](https://fast-endpoints.com/). 
+Features are organized as independent slices containing all necessary components (endpoints, models, logic) rather than traditional layered architecture.
+
 # Installation and Usage
 ### Using Docker
 - Have [Docker](https://www.docker.com/) set up
