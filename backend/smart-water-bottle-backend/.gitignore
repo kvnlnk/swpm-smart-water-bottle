@@ -1,0 +1,20 @@
+# --- Pre-configured ---
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharperl.Caches/
+
+# --- Self-configured ---
+# Secret environment variables
+.env
+# IDE settings
+.idea/
+# Rider user settings
+
+# Logging files
+Logs/
+# Data from the database
+Data/
+# Migration files for the database
+Migrations/
