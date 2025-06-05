@@ -24,7 +24,7 @@ public class Endpoint : EndpointWithoutRequest<Response>
     {
         _logger.LogInformation("Handling request for user information");
 
-        var userId = User.FindFirst("UserId")?.Value;
+        var userId = User.FindFirst("sub")?.Value;
 
         if (userId == null)
         {
