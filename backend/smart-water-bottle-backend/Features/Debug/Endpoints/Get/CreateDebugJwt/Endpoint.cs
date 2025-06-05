@@ -41,18 +41,17 @@ public class Endpoint : Endpoint<Request, Response>
         {
             try
             {
-                _logger.LogInformation("Creating JWT for user with id: {Id}", user.Id);
-                var jwtToken = JwtBearer.CreateToken(options =>
+                string? jwtToken = null;
+                _logger.LogInformation("Creating JWT for user with id by logging in: {Id}", user.Id);
+                var authResponse = await _supabase.Auth.SignIn(req.Email, req.Password);
+                if (authResponse != null)
                 {
-                    options.SigningKey = Environment.GetEnvironmentVariable("JWT_SECRET")!;
-                    options.ExpireAt = DateTime.UtcNow.AddDays(1);
-                    options.User.Claims.Add(("UserId", user.Id));
-                    options.User.Roles.Add("Role", user.Role);
-                    options.User.Claims.Add(("Username", user.Username ?? ""));
-                    options.User.Claims.Add(("FirstName", req.FirstName ?? ""));
-                    options.User.Claims.Add(("Lastname", req.LastName ?? ""));
-                    options.User.Claims.Add(("Email", user.Email ?? ""));
-                });
+                    jwtToken = authResponse.AccessToken;
+                }
+                else
+                {
+                    await SendUnauthorizedAsync(ct);
+                }
                 
                 _logger.LogInformation("Sending response with JWT...");
                 await SendOkAsync(new Response
