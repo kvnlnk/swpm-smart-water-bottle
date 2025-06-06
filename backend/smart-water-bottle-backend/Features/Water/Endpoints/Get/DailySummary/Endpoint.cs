@@ -21,7 +21,7 @@ public class Endpoint : EndpointWithoutRequest<Response>
 
     public override async Task HandleAsync(CancellationToken ct)
     {
-        _logger.LogInformation("Handling request to get today's drinking history");
+        _logger.LogInformation("Handling request to get today's drinking summary");
         var userId = User.FindFirst("sub")?.Value;
 
         if (userId == null)
