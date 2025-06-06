@@ -17,7 +17,6 @@
 
   <ItemGroup>
     <Folder Include="Features\Water\Endpoints\Get\DailySummary\" />
-    <Folder Include="Features\Water\Endpoints\Get\DrinkingHistory\" />
     <Folder Include="Features\Water\Endpoints\Post\LogDrinking\" />
   </ItemGroup>
 
