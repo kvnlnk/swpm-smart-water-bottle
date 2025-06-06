@@ -3,7 +3,7 @@ using Supabase.Postgrest;
 
 namespace smart_water_bottle_backend.Features.Water.Endpoints.Get.DrinkingHistory;
 
-public class Endpoint: EndpointWithoutRequest<Response>
+public class Endpoint : EndpointWithoutRequest<Response>
 {
     private readonly Supabase.Client _supabase;
     private readonly ILogger<Endpoint> _logger;
