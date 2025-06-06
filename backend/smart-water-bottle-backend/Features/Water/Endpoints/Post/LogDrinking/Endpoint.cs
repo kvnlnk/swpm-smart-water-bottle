@@ -105,7 +105,7 @@ public class Endpoint : Endpoint<Request, Response>
                 .Where(x => x.Date == today)
                 .Get(cancellationToken: ct);
 
-            _logger.LogInformation("Create new daily summary for user with id: {UserId}", userId);
+            _logger.LogInformation("Update daily summary for user with id: {UserId}", userId);
             if (existingSummary.Models.Count != 0)
             {
                 var summary = existingSummary.Models.First();
