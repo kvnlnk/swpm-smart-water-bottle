@@ -53,7 +53,7 @@ public class Endpoint : Endpoint<Request>
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to update user profile for user: {userId}", user.Id);
-                await SendErrorsAsync(500,ct);
+                await SendErrorsAsync(400,ct);
             }
         }
         else
