@@ -31,45 +31,31 @@ public class Endpoint : Endpoint<Request, Response>
             return;
         }
 
-        _logger.LogInformation("Retrieve user with email: {Email}", req.Email);
-        var user = await _supabase
-            .From<Entities.User>()
-            .Where(x => x.Email == req.Email)
-            .Single(ct);
+        try
+        {
+            string? jwtToken = null;
+            _logger.LogInformation("Creating JWT for user by logging in: {Email}", req.Email);
+            var authResponse = await _supabase.Auth.SignIn(req.Email, req.Password);
+            if (authResponse != null)
+            {
+                jwtToken = authResponse.AccessToken;
+            }
+            else
+            {
+                await SendUnauthorizedAsync(ct);
+                return;
+            }
 
-        if (user != null)
-        {
-            try
+            _logger.LogInformation("Sending response with JWT...");
+            await SendOkAsync(new Response
             {
-                string? jwtToken = null;
-                _logger.LogInformation("Creating JWT for user with id by logging in: {Id}", user.Id);
-                var authResponse = await _supabase.Auth.SignIn(req.Email, req.Password);
-                if (authResponse != null)
-                {
-                    jwtToken = authResponse.AccessToken;
-                }
-                else
-                {
-                    await SendUnauthorizedAsync(ct);
-                    return;
-                }
-                
-                _logger.LogInformation("Sending response with JWT...");
-                await SendOkAsync(new Response
-                {
-                    Token = jwtToken,
-                    ExpiresAt = DateTime.UtcNow.AddDays(1).ToString(CultureInfo.InvariantCulture)
-                }, ct);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "JWT creation error for user: {UserId}", user.Id);
-            }
+                Token = jwtToken,
+                ExpiresAt = DateTime.UtcNow.AddDays(1).ToString(CultureInfo.InvariantCulture)
+            }, ct);
         }
-        else
+        catch (Exception ex)
         {
-            _logger.LogWarning("User with email: {Email} not found", req.Email);
-            await SendNotFoundAsync(ct);
+            _logger.LogError(ex, "JWT creation error for user: {Email}", req.Email);
         }
     }
 }
