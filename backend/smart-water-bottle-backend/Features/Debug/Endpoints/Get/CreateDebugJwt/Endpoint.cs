@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 using FastEndpoints;
-using FastEndpoints.Security;
+using Supabase.Gotrue;
 
 namespace smart_water_bottle_backend.Features.Debug.Endpoints.Get.CreateDebugJWT;
 
@@ -31,17 +31,32 @@ public class Endpoint : Endpoint<Request, Response>
             return;
         }
 
+
+        _logger.LogInformation("Trying to sign in user with email: {Email}", req.Email);
+        Session? authResponse;
+
         try
         {
-            string? jwtToken = null;
+            authResponse = await _supabase.Auth.SignIn(req.Email, req.Password);
+        }
+        catch
+        {
+            await SendUnauthorizedAsync(ct);
+            return;
+        }
+
+        try
+        {
             _logger.LogInformation("Creating JWT for user by logging in: {Email}", req.Email);
-            var authResponse = await _supabase.Auth.SignIn(req.Email, req.Password);
-            if (authResponse != null)
+            string? jwtToken;
+            if (authResponse?.AccessToken != null)
             {
                 jwtToken = authResponse.AccessToken;
+                _logger.LogInformation("Login successful for {Email}", req.Email);
             }
             else
             {
+                _logger.LogWarning("Login failed - no valid session for {Email}", req.Email);
                 await SendUnauthorizedAsync(ct);
                 return;
             }
