@@ -15,4 +15,10 @@
     <PackageReference Include="Supabase" Version="1.1.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\Water\Endpoints\Get\DailySummary\" />
+    <Folder Include="Features\Water\Endpoints\Get\DrinkingHistory\" />
+    <Folder Include="Features\Water\Endpoints\Post\LogDrinking\" />
+  </ItemGroup>
+
 </Project>
