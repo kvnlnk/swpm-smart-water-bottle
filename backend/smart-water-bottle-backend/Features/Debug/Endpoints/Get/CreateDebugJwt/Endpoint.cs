@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 using FastEndpoints;
-using FastEndpoints.Security;
+using Supabase.Gotrue;
 
 namespace smart_water_bottle_backend.Features.Debug.Endpoints.Get.CreateDebugJWT;
 
@@ -31,45 +31,46 @@ public class Endpoint : Endpoint<Request, Response>
             return;
         }
 
-        _logger.LogInformation("Retrieve user with email: {Email}", req.Email);
-        var user = await _supabase
-            .From<Entities.User>()
-            .Where(x => x.Email == req.Email)
-            .Single(ct);
 
-        if (user != null)
+        _logger.LogInformation("Trying to sign in user with email: {Email}", req.Email);
+        Session? authResponse;
+
+        try
         {
-            try
-            {
-                string? jwtToken = null;
-                _logger.LogInformation("Creating JWT for user with id by logging in: {Id}", user.Id);
-                var authResponse = await _supabase.Auth.SignIn(req.Email, req.Password);
-                if (authResponse != null)
-                {
-                    jwtToken = authResponse.AccessToken;
-                }
-                else
-                {
-                    await SendUnauthorizedAsync(ct);
-                    return;
-                }
-                
-                _logger.LogInformation("Sending response with JWT...");
-                await SendOkAsync(new Response
-                {
-                    Token = jwtToken,
-                    ExpiresAt = DateTime.UtcNow.AddDays(1).ToString(CultureInfo.InvariantCulture)
-                }, ct);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "JWT creation error for user: {UserId}", user.Id);
-            }
+            authResponse = await _supabase.Auth.SignIn(req.Email, req.Password);
         }
-        else
+        catch
         {
-            _logger.LogWarning("User with email: {Email} not found", req.Email);
-            await SendNotFoundAsync(ct);
+            await SendUnauthorizedAsync(ct);
+            return;
+        }
+
+        try
+        {
+            _logger.LogInformation("Creating JWT for user by logging in: {Email}", req.Email);
+            string? jwtToken;
+            if (authResponse?.AccessToken != null)
+            {
+                jwtToken = authResponse.AccessToken;
+                _logger.LogInformation("Login successful for {Email}", req.Email);
+            }
+            else
+            {
+                _logger.LogWarning("Login failed - no valid session for {Email}", req.Email);
+                await SendUnauthorizedAsync(ct);
+                return;
+            }
+
+            _logger.LogInformation("Sending response with JWT...");
+            await SendOkAsync(new Response
+            {
+                Token = jwtToken,
+                ExpiresAt = DateTime.UtcNow.AddDays(1).ToString(CultureInfo.InvariantCulture)
+            }, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "JWT creation error for user: {Email}", req.Email);
         }
     }
 }

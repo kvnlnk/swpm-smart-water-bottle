@@ -22,5 +22,8 @@ public class DailySummary : BaseModel
     public int GoalMl { get; set; }
     
     [Column("goal_achieved")]
-    public int GoalAchieved { get; set; }
+    public bool GoalAchieved { get; set; }
+    
+    [Column("drink_count")]
+    public int DrinkCount { get; set; }
 }
