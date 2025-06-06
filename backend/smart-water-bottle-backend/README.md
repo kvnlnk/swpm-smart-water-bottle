@@ -16,6 +16,8 @@ Features are organized as independent slices containing all necessary components
 git clone https://github.com/kvnlnk/swpm-smart-water-bottle.git
 cd backend/smart-water-bottle-backend
 ```
+- Make a copy of `.env.example` and name it `.env` (will be Git-ignored)
+- Set the names and values of your secret environment variables in there
 - Run `docker compose up`
 ### Using local setup
 - Have [.Net 8](https://dotnet.microsoft.com/en-us/) set up
