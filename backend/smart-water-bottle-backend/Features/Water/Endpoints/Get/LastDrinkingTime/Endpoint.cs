@@ -10,8 +10,7 @@ public class Endpoint : EndpointWithoutRequest<Response>
     
     private const int NormalReminderIntervalMinutes = 180;
     private const int ImportantReminderIntervalMinutes = 300;
-
-
+    
     public Endpoint(Supabase.Client supabase, ILogger<Endpoint> logger)
     {
         _supabase = supabase;
