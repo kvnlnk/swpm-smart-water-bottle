@@ -8,8 +8,7 @@ public class Endpoint : EndpointWithoutRequest<Response>
     private readonly Supabase.Client _supabase;
     private readonly ILogger<Endpoint> _logger;
     
-    private const int NormalReminderIntervalMinutes = 180;
-    private const int ImportantReminderIntervalMinutes = 300;
+    private const int REMINDER_INTERVAL_MINUTES = 120;
 
 
     public Endpoint(Supabase.Client supabase, ILogger<Endpoint> logger)
@@ -55,20 +54,12 @@ public class Endpoint : EndpointWithoutRequest<Response>
             response.MinutesSinceLastDrink = minutesSince;
             
 
-            switch (minutesSince)
+            response.ShouldSendReminder = minutesSince >= REMINDER_INTERVAL_MINUTES;
+            
+            // Only add reminder message if last drinking time > 120 minutes
+            if (response.ShouldSendReminder)
             {
-                case >= ImportantReminderIntervalMinutes:
-                    response.DrinkReminderType = DrinkReminderType.Important;
-                    response.ShouldSendReminder = true;
-                    break;
-                case >= NormalReminderIntervalMinutes:
-                    response.DrinkReminderType = DrinkReminderType.Normal;
-                    response.ShouldSendReminder = true;
-                    break;
-                default:
-                    response.DrinkReminderType = DrinkReminderType.None;
-                    response.ShouldSendReminder = false;
-                    break;
+                response.ReminderMessage = $"Du hast seit {minutesSince} Minuten nichts getrunken. Zeit für Wasser!";
             }
             
             await SendOkAsync(response, ct);
@@ -81,7 +72,7 @@ public class Endpoint : EndpointWithoutRequest<Response>
                 LastDrinkingTime = null,
                 MinutesSinceLastDrink = 0,
                 ShouldSendReminder = true,
-                DrinkReminderType = DrinkReminderType.Important,
+                ReminderMessage = "Zeit für dein erstes Wasser heute!"
             }, 200, ct);
         }
     }
