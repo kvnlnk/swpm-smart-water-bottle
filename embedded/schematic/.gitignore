@@ -1,0 +1,8 @@
+# KiCad generated files to ignore
+*.bak
+*.tmp
+*.save
+*.kicad_prl
+*.sch-bak
+*.pcb-bak
+*.autosave
