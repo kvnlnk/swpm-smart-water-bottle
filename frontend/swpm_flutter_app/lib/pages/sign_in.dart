@@ -77,7 +77,7 @@ class SignIn extends StatelessWidget {
                     enableNativeAppleAuth: false,
                     socialProviders: [OAuthProvider.github],
                     onSuccess: (session) {
-                      Navigator.of(context).pushReplacementNamed('/home');
+                      Navigator.of(context).pushReplacementNamed('/main');
                     },
                     onError: (error) {
                       ScaffoldMessenger.of(context).showSnackBar(
