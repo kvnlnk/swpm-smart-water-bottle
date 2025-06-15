@@ -64,7 +64,7 @@ class HomeState extends State<Home> {
           ),
           const SizedBox(height: 4),
           Text(
-            "von ${dailyGoal.toStringAsFixed(1)}L Tagesziel",
+            "of your ${dailyGoal.toStringAsFixed(1)}L daily goal",
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
         ],
@@ -98,7 +98,7 @@ class HomeState extends State<Home> {
       appBar: AppBar(
         title: Column(
           children: [
-            Text("Hallo $username!", style: const TextStyle(fontSize: 18)),
+            Text("Hello $username!", style: const TextStyle(fontSize: 18)),
             Text(
               DateFormat('EEEE, dd. MMMM yyyy').format(DateTime.now()),
               style: const TextStyle(
