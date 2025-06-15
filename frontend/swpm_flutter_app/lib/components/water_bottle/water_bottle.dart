@@ -117,11 +117,9 @@ class WaterBottlePainter extends CustomPainter {
     final neckRingInner = size.width * 0.1;
     final neckRingInnerR = size.width - neckRingInner;
 
-    // Berechne Wasser-Höhe
     final waterHeight = (size.height - 5) * waterLevel;
     final waterTop = size.height - 5 - waterHeight;
 
-    // Zeichne einfaches Rechteck für Wasser
     canvas.drawRect(
       Rect.fromLTRB(
         neckRingInner + 5,
@@ -134,7 +132,6 @@ class WaterBottlePainter extends CustomPainter {
   }
 
   void paintGlossyOverlay(Canvas canvas, Size size, Paint paint) {
-    // Einfacher Glanz-Effekt ohne komplexe Shader
     paint.color = Colors.white.withAlpha(30);
     canvas.drawRect(Rect.fromLTRB(0, 0, size.width * 0.3, size.height), paint);
 
