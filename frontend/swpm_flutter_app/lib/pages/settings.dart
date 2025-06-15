@@ -222,7 +222,7 @@ class SettingsState extends State<Settings> {
             notificationsEnabled = value;
           });
         },
-        activeThumbColor: const Color.fromARGB(255, 22, 135, 188),
+        activeColor: const Color.fromARGB(255, 22, 135, 188),
       ),
       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     );
