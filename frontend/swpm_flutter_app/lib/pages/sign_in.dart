@@ -9,7 +9,7 @@ class SignIn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     void navigateHome(AuthResponse response) {
-      Navigator.of(context).pushReplacementNamed('/home');
+      Navigator.of(context).pushReplacementNamed('/main');
     }
 
     void navigateSignIn(AuthResponse response) {
