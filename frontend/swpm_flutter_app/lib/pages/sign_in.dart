@@ -13,46 +13,9 @@ class SignIn extends StatelessWidget {
       Navigator.of(context).pushReplacementNamed('/home');
     }
 
-    void navigateStart(AuthResponse response) {
+    void navigateSignIn(AuthResponse response) {
       Navigator.of(context).pushReplacementNamed('/');
     }
-
-    final darkModeThemeData = ThemeData.dark().copyWith(
-      colorScheme: const ColorScheme.dark(
-        primary: Color.fromARGB(248, 183, 183, 183), // text below main button
-      ),
-      textSelectionTheme: TextSelectionThemeData(
-        cursorColor: Colors.blueGrey[300], // cursor when typing
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        fillColor: Colors.grey[800], // background of text entry
-        filled: true,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide.none,
-        ),
-        labelStyle: const TextStyle(
-          color: Color.fromARGB(179, 255, 255, 255),
-        ), // text labeling text entry
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color.fromARGB(
-            255,
-            22,
-            135,
-            188,
-          ), // main button
-          foregroundColor: const Color.fromARGB(
-            255,
-            255,
-            255,
-            255,
-          ), // main button text
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      ),
-    );
 
     return Scaffold(
       appBar: appBar('Sign In'),
@@ -62,7 +25,7 @@ class SignIn extends StatelessWidget {
           SupaEmailAuth(
             redirectTo: kIsWeb ? null : 'smart-water-bottle://login-callback',
             onSignInComplete: navigateHome,
-            onSignUpComplete: navigateStart,
+            onSignUpComplete: navigateSignIn,
             metadataFields: [
               MetaDataField(
                 prefixIcon: const Icon(Icons.person),
