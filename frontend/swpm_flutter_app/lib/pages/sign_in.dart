@@ -41,6 +41,7 @@ class SignIn extends StatelessWidget {
                         : 'smart-water-bottle://login-callback',
                     onSignInComplete: navigateHome,
                     onSignUpComplete: navigateSignIn,
+                    showConfirmPasswordField: true,
                     metadataFields: [
                       MetaDataField(
                         prefixIcon: const Icon(Icons.person),
