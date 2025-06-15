@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_auth_ui/supabase_auth_ui.dart';
 
@@ -16,6 +15,15 @@ class SignIn extends StatelessWidget {
     void navigateSignIn(AuthResponse response) {
       Navigator.of(context).pushReplacementNamed('/');
     }
+
+    final buttonTheme = ThemeData(
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color.fromARGB(255, 22, 135, 188),
+          foregroundColor: Colors.white,
+        ),
+      ),
+    );
 
     return Scaffold(
       body: SafeArea(
@@ -35,26 +43,30 @@ class SignIn extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.all(24.0),
                 children: [
-                  SupaEmailAuth(
-                    redirectTo: kIsWeb
-                        ? null
-                        : 'smart-water-bottle://login-callback',
-                    onSignInComplete: navigateHome,
-                    onSignUpComplete: navigateSignIn,
-                    showConfirmPasswordField: true,
-                    metadataFields: [
-                      MetaDataField(
-                        prefixIcon: const Icon(Icons.person),
-                        label: 'Username',
-                        key: 'username',
-                        validator: (val) {
-                          if (val == null || val.isEmpty) {
-                            return 'Please enter something';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
+                  Theme(
+                    data: buttonTheme,
+                    child: SupaEmailAuth(
+                      redirectTo: kIsWeb
+                          ? null
+                          : 'smart-water-bottle://login-callback',
+                      onSignInComplete: navigateHome,
+                      onSignUpComplete: navigateSignIn,
+                      showConfirmPasswordField: true,
+
+                      metadataFields: [
+                        MetaDataField(
+                          prefixIcon: const Icon(Icons.person),
+                          label: 'Username',
+                          key: 'username',
+                          validator: (val) {
+                            if (val == null || val.isEmpty) {
+                              return 'Please enter something';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                   spacer,
                   SupaSocialsAuth(
