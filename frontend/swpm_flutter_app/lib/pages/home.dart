@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:swpm_flutter_app/controller/water_controller.dart';
 import '../components/water_bottle/water_bottle.dart';
+import 'package:provider/provider.dart';
+import 'package:swpm_flutter_app/store/user_data.dart';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -12,53 +12,13 @@ class Home extends StatefulWidget {
 }
 
 class HomeState extends State<Home> {
-  final supabase = Supabase.instance.client;
-  final WaterController waterController = WaterController();
-  double waterConsumed = 0.0;
   double waterLevel = 0.5;
-  double dailyGoal = 2.5;
-  String? username;
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUsername();
-    _loadWaterData();
-  }
-
-  void _loadUsername() {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user != null) {
-      setState(() {
-        username = user.userMetadata?['username'];
-      });
-    }
-  }
-
-  Future<void> _loadWaterData() async {
-    setState(() {
-      isLoading = true;
-    });
-
-    try {
-      final summary = await waterController.getDailySummary();
-      setState(() {
-        waterConsumed = summary['consumed'] ?? 0.0;
-        dailyGoal = summary['goal'] ?? 2.5;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    waterLevel =
-        dailyGoal > 0 ? (waterConsumed / dailyGoal).clamp(0.0, 1.0) : 0.0;
+    final userData = Provider.of<UserDataNotifier>(context);
+    final username = userData.username;
+    final dailyGoal = userData.dailyGoal;
 
     final plain = WaterBottle(
       waterColor: Colors.blue,
@@ -82,7 +42,9 @@ class HomeState extends State<Home> {
       child: Column(
         children: [
           Text(
-            "${(waterConsumed).toStringAsFixed(2)}L",
+            dailyGoal != null
+                ? "${(waterLevel * dailyGoal).toStringAsFixed(1)}L"
+                : "–",
             style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
@@ -91,57 +53,71 @@ class HomeState extends State<Home> {
           ),
           const SizedBox(height: 4),
           Text(
-            "of your ${dailyGoal.toStringAsFixed(2)}L daily goal",
+            dailyGoal != null
+                ? "of your ${dailyGoal.toStringAsFixed(1)}L daily goal"
+                : "–",
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
         ],
       ),
     );
 
+    final waterSlider = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 40),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Icon(Icons.opacity),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Slider(
+              value: waterLevel,
+              max: 1.0,
+              min: 0.0,
+              onChanged: (value) {
+                setState(() {
+                  waterLevel = value;
+                });
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+
     return Scaffold(
-        appBar: AppBar(
-          title: Column(
-            children: [
-              Text("Hello $username!", style: const TextStyle(fontSize: 18)),
-              Text(
-                DateFormat('EEEE, dd. MMMM yyyy').format(DateTime.now()),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.normal,
-                ),
+      appBar: AppBar(
+        title: Column(
+          children: [
+            Text("Hello ${username ?? "–"}!",
+                style: const TextStyle(fontSize: 18)),
+            Text(
+              DateFormat('EEEE, dd. MMMM yyyy').format(DateTime.now()),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.normal,
               ),
-            ],
-          ),
-          centerTitle: true,
-          backgroundColor: Colors.white,
+            ),
+          ],
         ),
-        body: RefreshIndicator(
-          onRefresh: () => _loadWaterData(),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight,
-                  ),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Spacer(),
-                        bottle,
-                        const Spacer(),
-                        waterDisplay,
-                        const Spacer(),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ));
+        centerTitle: true,
+        backgroundColor: Colors.white,
+      ),
+      body: Container(
+        color: Colors.white,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Spacer(),
+            bottle,
+            const Spacer(),
+            waterSlider,
+            waterDisplay,
+            const Spacer(),
+          ],
+        ),
+      ),
+    );
   }
 }
