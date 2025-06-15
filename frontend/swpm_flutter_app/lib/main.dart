@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:swpm_flutter_app/pages/home.dart';
+import 'package:swpm_flutter_app/pages/main_page.dart';
 import 'package:swpm_flutter_app/pages/sign_in.dart';
 
 Future<void> main() async {
@@ -25,6 +25,9 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Smart Water Bottle',
       theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color.fromARGB(255, 22, 135, 188),
+        ),
         inputDecorationTheme: const InputDecorationTheme(
           border: OutlineInputBorder(),
         ),
@@ -32,7 +35,7 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const SignIn(),
-        '/home': (context) => const Home(),
+        '/main': (context) => const MainPage(),
       },
     );
   }
