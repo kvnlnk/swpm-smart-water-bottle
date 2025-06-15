@@ -30,7 +30,7 @@ class SignIn extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
             ),
-            SizedBox(height: 40), // Abstand zum Content
+            SizedBox(height: 40),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.all(24.0),
@@ -52,28 +52,6 @@ class SignIn extends StatelessWidget {
                           }
                           return null;
                         },
-                      ),
-                      BooleanMetaDataField(
-                        label:
-                            'Keep me up to date with the latest news and updates.',
-                        key: 'marketing_consent',
-                        checkboxPosition: ListTileControlAffinity.leading,
-                      ),
-                      BooleanMetaDataField(
-                        key: 'terms_agreement',
-                        isRequired: true,
-                        checkboxPosition: ListTileControlAffinity.leading,
-                        richLabelSpans: [
-                          const TextSpan(text: 'I have read and agree to the '),
-                          TextSpan(
-                            text: 'Terms and Conditions',
-                            style: const TextStyle(color: Colors.blue),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                // Handle tap on Terms and Conditions
-                              },
-                          ),
-                        ],
                       ),
                     ],
                   ),
