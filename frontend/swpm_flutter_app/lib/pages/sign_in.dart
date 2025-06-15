@@ -13,6 +13,10 @@ class SignIn extends StatelessWidget {
       Navigator.of(context).pushReplacementNamed('/home');
     }
 
+    void navigateStart(AuthResponse response) {
+      Navigator.of(context).pushReplacementNamed('/');
+    }
+
     final darkModeThemeData = ThemeData.dark().copyWith(
       colorScheme: const ColorScheme.dark(
         primary: Color.fromARGB(248, 183, 183, 183), // text below main button
@@ -58,7 +62,7 @@ class SignIn extends StatelessWidget {
           SupaEmailAuth(
             redirectTo: kIsWeb ? null : 'smart-water-bottle://login-callback',
             onSignInComplete: navigateHome,
-            onSignUpComplete: navigateHome,
+            onSignUpComplete: navigateStart,
             metadataFields: [
               MetaDataField(
                 prefixIcon: const Icon(Icons.person),
