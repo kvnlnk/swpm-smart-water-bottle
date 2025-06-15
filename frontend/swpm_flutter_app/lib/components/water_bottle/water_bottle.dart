@@ -61,7 +61,7 @@ class WaterBottlePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Flasche zeichnen
+    // Bottle
     {
       final paint = Paint();
       paint.color = bottleColor;
@@ -70,7 +70,7 @@ class WaterBottlePainter extends CustomPainter {
       paintEmptyBottle(canvas, size, paint);
     }
 
-    // Wasser zeichnen (statisch, ohne Wellen)
+    // Water
     {
       final paint = Paint();
       paint.color = waterColor;
@@ -78,14 +78,14 @@ class WaterBottlePainter extends CustomPainter {
       paintStaticWater(canvas, size, paint);
     }
 
-    // Glanz-Effekt
+    // Glossy-Effect
     {
       final paint = Paint();
       paint.style = PaintingStyle.fill;
       paintGlossyOverlay(canvas, size, paint);
     }
 
-    // Deckel
+    // Cap
     {
       final paint = Paint();
       paint.style = PaintingStyle.fill;
