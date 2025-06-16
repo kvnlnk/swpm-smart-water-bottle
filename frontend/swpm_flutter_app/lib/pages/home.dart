@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../components/water_bottle/water_bottle.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:swpm_flutter_app/store/user_data.dart';
+import 'package:swpm_flutter_app/controller/water_controller.dart';
+import '../components/water_bottle/water_bottle.dart';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -12,23 +14,55 @@ class Home extends StatefulWidget {
 }
 
 class HomeState extends State<Home> {
+  final WaterController waterController = WaterController();
+  double waterConsumed = 0.0;
   double waterLevel = 0.5;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWaterData();
+  }
+
+  Future<void> _loadWaterData() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final summary = await waterController.getDailySummary();
+      setState(() {
+        waterConsumed = summary['consumed'] ?? 0.0;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final userData = Provider.of<UserDataNotifier>(context);
-    final username = userData.username;
-    final dailyGoal = userData.dailyGoal;
+    final username = userData.username ?? '–';
+    final dailyGoal = userData.dailyGoal ?? 2.5;
 
-    final plain = WaterBottle(
-      waterColor: Colors.blue,
-      bottleColor: Colors.lightBlue,
-      capColor: Colors.blueGrey,
-      waterLevel: waterLevel,
-    );
+    waterLevel =
+    dailyGoal > 0 ? (waterConsumed / dailyGoal).clamp(0.0, 1.0) : 0.0;
 
     final bottle = Center(
-      child: SizedBox(width: 200, height: 300, child: plain),
+      child: SizedBox(
+        width: 200,
+        height: 300,
+        child: WaterBottle(
+          waterColor: Colors.blue,
+          bottleColor: Colors.lightBlue,
+          capColor: Colors.blueGrey,
+          waterLevel: waterLevel,
+        ),
+      ),
     );
 
     final waterDisplay = Container(
@@ -42,9 +76,7 @@ class HomeState extends State<Home> {
       child: Column(
         children: [
           Text(
-            dailyGoal != null
-                ? "${(waterLevel * dailyGoal).toStringAsFixed(1)}L"
-                : "–",
+            "${waterConsumed.toStringAsFixed(2)}L",
             style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
@@ -53,33 +85,8 @@ class HomeState extends State<Home> {
           ),
           const SizedBox(height: 4),
           Text(
-            dailyGoal != null
-                ? "of your ${dailyGoal.toStringAsFixed(1)}L daily goal"
-                : "–",
+            "of your ${dailyGoal.toStringAsFixed(2)}L daily goal",
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-          ),
-        ],
-      ),
-    );
-
-    final waterSlider = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 40),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Icon(Icons.opacity),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Slider(
-              value: waterLevel,
-              max: 1.0,
-              min: 0.0,
-              onChanged: (value) {
-                setState(() {
-                  waterLevel = value;
-                });
-              },
-            ),
           ),
         ],
       ),
@@ -89,8 +96,7 @@ class HomeState extends State<Home> {
       appBar: AppBar(
         title: Column(
           children: [
-            Text("Hello ${username ?? "–"}!",
-                style: const TextStyle(fontSize: 18)),
+            Text("Hello $username!", style: const TextStyle(fontSize: 18)),
             Text(
               DateFormat('EEEE, dd. MMMM yyyy').format(DateTime.now()),
               style: const TextStyle(
@@ -103,19 +109,30 @@ class HomeState extends State<Home> {
         centerTitle: true,
         backgroundColor: Colors.white,
       ),
-      body: Container(
-        color: Colors.white,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Spacer(),
-            bottle,
-            const Spacer(),
-            waterSlider,
-            waterDisplay,
-            const Spacer(),
-          ],
+      body: RefreshIndicator(
+        onRefresh: _loadWaterData,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Spacer(),
+                      bottle,
+                      const Spacer(),
+                      waterDisplay,
+                      const Spacer(),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

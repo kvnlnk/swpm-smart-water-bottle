@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'dart:convert';
 import 'package:provider/provider.dart';
 import 'package:swpm_flutter_app/store/user_data.dart';
+import 'package:swpm_flutter_app/services/settings_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 
 class Settings extends StatefulWidget {
   const Settings({Key? key}) : super(key: key);
+
   @override
   SettingsState createState() => SettingsState();
 }
@@ -25,68 +25,41 @@ class SettingsState extends State<Settings> {
   void initState() {
     super.initState();
     store = Provider.of<UserDataNotifier>(context, listen: false);
-    fetchUserData();
+    _fetchUserData();
   }
 
-  Future<void> fetchUserData() async {
-    try {
-      final jwt = Supabase.instance.client.auth.currentSession?.accessToken;
-      if (jwt == null) return;
+  Future<void> _fetchUserData() async {
+    final data = await SettingsService.fetchUserData();
+    if (data == null) return;
 
-      final url = Uri.parse("${dotenv.env['API_BASE_URL']}/api/user/information");
-      final response = await http.get(url, headers: {
-        'Authorization': 'Bearer $jwt',
-      });
+    setState(() {
+      username = data['username'];
+      waterTarget = (data['dailyGoalMl'] != null) ? data['dailyGoalMl'] / 1000.0 : null;
+      notificationsEnabled = data['notificationsEnabled'];
+      weight = (data['weightKg'] as num?)?.toDouble();
+      height = (data['heightCm'] as num?)?.toDouble();
+    });
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        setState(() {
-          username = data['username'];
-          waterTarget = (data['dailyGoalMl'] != null) ? data['dailyGoalMl'] / 1000.0 : null;
-          notificationsEnabled = data['notificationsEnabled'];
-          weight = (data['weightKg'] as num?)?.toDouble();
-          height = (data['heightCm'] as num?)?.toDouble();
-        });
-
-        store.updateFromJson(data);
-      }
-    } catch (_) {}
+    store.updateFromJson(data);
   }
 
-  Future<void> updateProfile({
+  Future<void> _updateProfile({
     double? weight,
     double? height,
     double? waterTarget,
     bool? notificationsEnabled,
   }) async {
-    final jwt = Supabase.instance.client.auth.currentSession?.accessToken;
-    if (jwt == null) return;
+    final success = await SettingsService.updateProfile(
+      weight: weight,
+      height: height,
+      waterTarget: waterTarget,
+      notificationsEnabled: notificationsEnabled,
+    );
 
-    final url = Uri.parse("${dotenv.env['API_BASE_URL']}/api/user/profile/update");
-
-    final body = {
-      if (weight != null) 'WeightKg': weight.round(),
-      if (height != null) 'HeightCm': height.round(),
-      if (waterTarget != null) 'DailyGoalMl': (waterTarget * 1000).round(),
-      if (notificationsEnabled != null) 'NotificationsEnabled': notificationsEnabled,
-    };
-
-    try {
-      final response = await http.patch(
-        url,
-        headers: {
-          'Authorization': 'Bearer $jwt',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(body),
-      );
-
-      if (response.statusCode == 200) {
-        if (notificationsEnabled != null) store.updateNotifications(notificationsEnabled);
-        if (waterTarget != null) store.updateDailyGoal(waterTarget);
-      }
-    } catch (_) {}
+    if (success) {
+      if (notificationsEnabled != null) store.updateNotifications(notificationsEnabled);
+      if (waterTarget != null) store.updateDailyGoal(waterTarget);
+    }
   }
 
   void updateLocalState(String field, double value) {
@@ -96,7 +69,7 @@ class SettingsState extends State<Settings> {
       if (field.contains('Daily Goal')) waterTarget = value;
     });
 
-    updateProfile(
+    _updateProfile(
       height: field == 'Height' ? value : null,
       weight: field == 'Weight' ? value : null,
       waterTarget: field.contains('Daily Goal') ? value : null,
@@ -273,7 +246,7 @@ class SettingsState extends State<Settings> {
           setState(() {
             notificationsEnabled = value;
           });
-          await updateProfile(notificationsEnabled: value);
+          await _updateProfile(notificationsEnabled: value);
         },
         activeColor: const Color.fromARGB(255, 22, 135, 188),
       ),
