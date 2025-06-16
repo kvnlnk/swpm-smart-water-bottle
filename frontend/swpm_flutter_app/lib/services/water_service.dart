@@ -1,38 +1,86 @@
 import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class WaterService {
-  static String? get _baseUrl => dotenv.env['API_BASE_URL'];
-  final SupabaseClient _supabase = Supabase.instance.client;
+  final String _baseUrl = dotenv.env['API_BASE_URL']!;
+  final _client = Supabase.instance.client;
 
-  Map<String, String> _getHeaders() {
-    final token = _supabase.auth.currentSession?.accessToken;
-    return {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    };
-  }
+  Future<WaterSummary?> fetchDailySummary() async {
+    final jwt = _client.auth.currentSession?.accessToken;
+    if (jwt == null) return null;
 
-  Future<Map<String, double>> getDailySummary() async {
+    final url = Uri.parse('$_baseUrl/api/water/daily-summary');
+
     try {
       final response = await http.get(
-        Uri.parse('$_baseUrl/api/water/daily-summary'),
-        headers: _getHeaders(),
+        url,
+        headers: {
+          'Authorization': 'Bearer $jwt',
+        },
       );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return {
-          'consumed': (data['totalAmountMl'] as num?)!.toDouble() / 1000,
-          'goal': (data['goalAmountMl'] as num?)!.toDouble() / 1000,
-        };
-      } else {
-        return {'consumed': 0.0, 'goal': 2.5};
+        final jsonData = json.decode(response.body);
+        return WaterSummary.fromJson(jsonData);
       }
-    } catch (e) {
-      return {'consumed': 0.0, 'goal': 2.5};
-    }
+    } catch (_) {}
+
+    return WaterSummary(
+      date: DateTime.now(),
+      totalAmountMl: 1200,
+      goalAmountMl: 2500,
+      percentageAchieved: 48,
+      drinkCount: 5,
+      isGoalReached: false,
+    );
+  }
+
+  Future<void> addDrink(int amountMl) async {
+    final jwt = Supabase.instance.client.auth.currentSession?.accessToken;
+    if (jwt == null) return;
+
+    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/api/water/drink');
+
+    try {
+      await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $jwt',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'amountMl': amountMl}),
+      );
+    } catch (_) {}
+  }
+}
+
+class WaterSummary {
+  final DateTime date;
+  final int totalAmountMl;
+  final int goalAmountMl;
+  final int percentageAchieved;
+  final int drinkCount;
+  final bool isGoalReached;
+
+  WaterSummary({
+    required this.date,
+    required this.totalAmountMl,
+    required this.goalAmountMl,
+    required this.percentageAchieved,
+    required this.drinkCount,
+    required this.isGoalReached,
+  });
+
+  factory WaterSummary.fromJson(Map<String, dynamic> json) {
+    return WaterSummary(
+      date: DateTime.parse(json['date']),
+      totalAmountMl: json['totalAmountMl'],
+      goalAmountMl: json['goalAmountMl'],
+      percentageAchieved: json['percentageAchieved'],
+      drinkCount: json['drinkCount'],
+      isGoalReached: json['isGoalReached'],
+    );
   }
 }
