@@ -38,10 +38,10 @@ class WaterService {
   }
 
   Future<void> addDrink(int amountMl) async {
-    final jwt = Supabase.instance.client.auth.currentSession?.accessToken;
+    final jwt = _client.auth.currentSession?.accessToken;
     if (jwt == null) return;
 
-    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/api/water/drink');
+    final url = Uri.parse('$_baseUrl/api/water/drink');
 
     try {
       await http.post(

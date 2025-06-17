@@ -4,12 +4,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SettingsService {
+  static final String apiBaseUrl = dotenv.env['API_BASE_URL']!;
+
   static Future<Map<String, dynamic>?> fetchUserData() async {
     try {
       final jwt = Supabase.instance.client.auth.currentSession?.accessToken;
       if (jwt == null) return null;
 
-      final url = Uri.parse("${dotenv.env['API_BASE_URL']}/api/user/information");
+      final url = Uri.parse("$apiBaseUrl/api/user/information");
       final response = await http.get(url, headers: {
         'Authorization': 'Bearer $jwt',
       });
@@ -32,7 +34,7 @@ class SettingsService {
       final jwt = Supabase.instance.client.auth.currentSession?.accessToken;
       if (jwt == null) return false;
 
-      final url = Uri.parse("${dotenv.env['API_BASE_URL']}/api/user/profile/update");
+      final url = Uri.parse("$apiBaseUrl/api/user/profile/update");
 
       final body = {
         if (weight != null) 'WeightKg': weight.round(),
