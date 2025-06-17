@@ -1,17 +1,80 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:swpm_flutter_app/store/user_data.dart';
+import 'package:swpm_flutter_app/services/settings_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 
 class Settings extends StatefulWidget {
   const Settings({Key? key}) : super(key: key);
+
   @override
   SettingsState createState() => SettingsState();
 }
 
 class SettingsState extends State<Settings> {
-  double waterTarget = 2.5;
-  double weight = 85.0;
-  double height = 185.0;
-  bool notificationsEnabled = true;
+  double? waterTarget;
+  double? weight;
+  double? height;
+  bool? notificationsEnabled;
+  String? username;
+
+  late final UserDataNotifier store;
+
+  @override
+  void initState() {
+    super.initState();
+    store = Provider.of<UserDataNotifier>(context, listen: false);
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    final data = await SettingsService.fetchUserData();
+    if (data == null) return;
+
+    setState(() {
+      username = data['username'];
+      waterTarget = (data['dailyGoalMl'] != null) ? data['dailyGoalMl'] / 1000.0 : null;
+      notificationsEnabled = data['notificationsEnabled'];
+      weight = (data['weightKg'] as num?)?.toDouble();
+      height = (data['heightCm'] as num?)?.toDouble();
+    });
+
+    store.updateFromJson(data);
+  }
+
+  Future<void> _updateProfile({
+    double? weight,
+    double? height,
+    double? waterTarget,
+    bool? notificationsEnabled,
+  }) async {
+    final success = await SettingsService.updateProfile(
+      weight: weight,
+      height: height,
+      waterTarget: waterTarget,
+      notificationsEnabled: notificationsEnabled,
+    );
+
+    if (success) {
+      if (notificationsEnabled != null) store.updateNotifications(notificationsEnabled);
+      if (waterTarget != null) store.updateDailyGoal(waterTarget);
+    }
+  }
+
+  void updateLocalState(String field, double value) {
+    setState(() {
+      if (field == 'Height') height = value;
+      if (field == 'Weight') weight = value;
+      if (field.contains('Daily Goal')) waterTarget = value;
+    });
+
+    _updateProfile(
+      height: field == 'Height' ? value : null,
+      weight: field == 'Weight' ? value : null,
+      waterTarget: field.contains('Daily Goal') ? value : null,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,27 +82,21 @@ class SettingsState extends State<Settings> {
       body: Container(
         color: Colors.grey[50],
         child: ListView(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           children: [
-            buildSection(
-              title: 'Daily Goal',
-              children: [buildWaterTargetTile()],
-            ),
-            SizedBox(height: 20),
-            buildSection(
-              title: 'Notifications',
-              children: [buildNotificationToggle()],
-            ),
-            SizedBox(height: 20),
+            buildSection(title: 'Daily Goal', children: [buildWaterTargetTile()]),
+            const SizedBox(height: 20),
+            buildSection(title: 'Notifications', children: [buildNotificationToggle()]),
+            const SizedBox(height: 20),
             buildSection(
               title: 'Profile',
               children: [
-                buildReadOnlyTile("Username", "ABC"),
-                buildProfileTile("Weight", weight, 0.0, 125.0, "kg", weight),
-                buildProfileTile("Height", height, 0.0, 200.0, "cm", height),
+                buildReadOnlyTile("Username", username),
+                buildProfileTile("Weight", weight, 0.0, 125.0, "kg"),
+                buildProfileTile("Height", height, 0.0, 200.0, "cm"),
               ],
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             buildSection(title: 'Account', children: [buildLogoutTile()]),
           ],
         ),
@@ -52,30 +109,22 @@ class SettingsState extends State<Settings> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: const Color.fromARGB(29, 0, 0, 0),
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
+        boxShadow: const [
+          BoxShadow(color: Color.fromARGB(29, 0, 0, 0), blurRadius: 10, offset: Offset(0, 2)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Text(
               title,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[700],
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[700]),
             ),
           ),
           ...children.map(
-            (child) => Column(
+                (child) => Column(
               children: [
                 child,
                 if (children.indexOf(child) < children.length - 1)
@@ -88,69 +137,60 @@ class SettingsState extends State<Settings> {
     );
   }
 
-  Widget buildProfileTile(
-    String title,
-    double currentValue,
-    double min,
-    double max,
-    String unit,
-    double value,
-  ) {
-    return ListTile(
-      title: Text(title, style: TextStyle(fontSize: 16)),
-      trailing: GestureDetector(
+  Widget buildProfileTile(String title, double? currentValue, double min, double max, String unit) {
+    return buildListTile(
+      title: title,
+      trailing: currentValue != null
+          ? buildTiledContainer(
+        displayValue: "${currentValue.toStringAsFixed(2)} $unit",
         onTap: () => showTargetDialog(title, currentValue, min, max, unit),
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: const Color.fromARGB(33, 22, 135, 188),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            "${value.toStringAsFixed(2)} $unit",
-            style: TextStyle(
-              color: const Color.fromARGB(255, 22, 135, 188),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
-      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      )
+          : const Text("–"),
     );
   }
 
   Widget buildWaterTargetTile() {
-    return ListTile(
-      title: Text('Water Amount', style: TextStyle(fontSize: 16)),
-      trailing: GestureDetector(
-        onTap: () =>
-            showTargetDialog("Set Daily Goal", waterTarget, 0.0, 4.0, "Liter"),
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: const Color.fromARGB(28, 22, 135, 188),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            '${waterTarget.toStringAsFixed(1)}L',
-            style: TextStyle(
-              color: const Color.fromARGB(255, 22, 135, 188),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
-      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    return buildListTile(
+      title: "Water Amount",
+      trailing: waterTarget != null
+          ? buildTiledContainer(
+        displayValue: '${waterTarget!.toStringAsFixed(1)}L',
+        onTap: () => showTargetDialog("Set Daily Goal", waterTarget!, 0.0, 4.0, "Liter"),
+      )
+          : const Text("–"),
     );
   }
 
-  void showTargetDialog(
-    String title,
-    double currentValue,
-    double min,
-    double max,
-    String unit,
-  ) {
+  Widget buildTiledContainer({
+    required String displayValue,
+    required VoidCallback onTap,
+    Color background = const Color.fromARGB(33, 22, 135, 188),
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(20)),
+        child: Text(
+          displayValue,
+          style: const TextStyle(
+            color: Color.fromARGB(255, 22, 135, 188),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildListTile({required String title, required Widget trailing}) {
+    return ListTile(
+      title: Text(title, style: const TextStyle(fontSize: 16)),
+      trailing: trailing,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    );
+  }
+
+  void showTargetDialog(String title, double currentValue, double min, double max, String unit) {
     showDialog(
       context: context,
       builder: (context) {
@@ -164,47 +204,32 @@ class SettingsState extends State<Settings> {
                 children: [
                   Text(
                     '${tempValue.toStringAsFixed(1)} $unit',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: const Color.fromARGB(255, 22, 135, 188),
+                      color: Color.fromARGB(255, 22, 135, 188),
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   Slider(
                     value: tempValue,
                     min: min,
                     max: max,
                     divisions: 40,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        tempValue = value;
-                      });
-                    },
+                    onChanged: (value) => setDialogState(() => tempValue = value),
                   ),
                 ],
               );
             },
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
             ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  if (title == 'Height') {
-                    height = tempValue;
-                  } else if (title == 'Weight') {
-                    weight = tempValue;
-                  } else if (title.contains('Daily Goal')) {
-                    waterTarget = tempValue;
-                  }
-                });
+              onPressed: () async {
+                updateLocalState(title, tempValue);
                 Navigator.pop(context);
               },
-              child: Text('Save'),
+              child: const Text('Save'),
             ),
           ],
         );
@@ -213,34 +238,30 @@ class SettingsState extends State<Settings> {
   }
 
   Widget buildNotificationToggle() {
-    return ListTile(
-      title: Text('Notifications', style: TextStyle(fontSize: 16)),
+    return buildListTile(
+      title: "Notifications",
       trailing: Switch(
-        value: notificationsEnabled,
-        onChanged: (value) {
+        value: notificationsEnabled ?? false,
+        onChanged: (value) async {
           setState(() {
             notificationsEnabled = value;
           });
+          await _updateProfile(notificationsEnabled: value);
         },
         activeColor: const Color.fromARGB(255, 22, 135, 188),
       ),
-      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     );
   }
 
   Widget buildLogoutTile() {
     return ListTile(
-      leading: Icon(Icons.logout, color: Colors.red),
-      title: Text(
+      leading: const Icon(Icons.logout, color: Colors.red),
+      title: const Text(
         'Sign Out',
-        style: TextStyle(
-          fontSize: 16,
-          color: Colors.red,
-          fontWeight: FontWeight.w500,
-        ),
+        style: TextStyle(fontSize: 16, color: Colors.red, fontWeight: FontWeight.w500),
       ),
       onTap: handleLogout,
-      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     );
   }
 
@@ -249,25 +270,19 @@ class SettingsState extends State<Settings> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: Text('Sign Out'),
-          content: Text('Are you sure you want to sign out?'),
+          title: const Text('Sign Out'),
+          content: const Text('Are you sure you want to sign out?'),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text('Cancel'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
                 _performLogout();
               },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: Text(
+              child: const Text(
                 'Sign Out',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -279,37 +294,30 @@ class SettingsState extends State<Settings> {
   void _performLogout() async {
     try {
       await Supabase.instance.client.auth.signOut();
-
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/');
-      }
+      if (mounted) Navigator.pushReplacementNamed(context, '/');
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Logout failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logout failed: $e')),
+        );
       }
     }
   }
 
-  Widget buildReadOnlyTile(String title, String value) {
-    return ListTile(
-      title: Text(title, style: TextStyle(fontSize: 16)),
+  Widget buildReadOnlyTile(String title, String? value) {
+    return buildListTile(
+      title: title,
       trailing: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: const Color.fromARGB(26, 158, 158, 158),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
-          value,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontWeight: FontWeight.bold,
-          ),
+          value ?? '–',
+          style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.bold),
         ),
       ),
-      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     );
   }
 }
