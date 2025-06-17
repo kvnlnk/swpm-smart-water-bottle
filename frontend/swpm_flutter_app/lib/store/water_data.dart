@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:swpm_flutter_app/services/water_service.dart';
 
 class WaterDataNotifier extends ChangeNotifier {
   double _consumed = 0.0;
@@ -6,12 +7,14 @@ class WaterDataNotifier extends ChangeNotifier {
   int _percentageAchieved = 0;
   int _drinkCount = 0;
   bool _isGoalReached = false;
+  List<DrinkingEntry> _history = [];
 
   double get consumed => _consumed;
   double get dailyGoal => _dailyGoal;
   int get percentageAchieved => _percentageAchieved;
   int get drinkCount => _drinkCount;
   bool get isGoalReached => _isGoalReached;
+  List<DrinkingEntry> get history => _history;
 
   void updateFromMap(Map<String, dynamic> json) {
     _consumed = (json['consumed'] as num?)?.toDouble() ?? 0.0;
@@ -22,12 +25,18 @@ class WaterDataNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateHistory(List<DrinkingEntry> entries) {
+    _history = entries;
+    notifyListeners();
+  }
+
   void clear() {
     _consumed = 0.0;
     _dailyGoal = 2.5;
     _percentageAchieved = 0;
     _drinkCount = 0;
     _isGoalReached = false;
+    _history = [];
     notifyListeners();
   }
 }

@@ -85,7 +85,7 @@ class HomeState extends State<Home> {
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: reached ? Colors.green : Colors.black87,
+              color: consumed >= dailyGoal ? Colors.green : Colors.black87,
             ),
           ),
           const SizedBox(height: 4),
@@ -94,8 +94,18 @@ class HomeState extends State<Home> {
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
-          Text("Drinks: $drinks | Achieved: $percentage%"),
-          Text("Goal reached: ${reached ? "Yes" : "No"}"),
+          Text(
+            "Drinks: $drinks | Achieved: $percentage%",
+            style: TextStyle(
+              color: consumed >= dailyGoal ? Colors.green : Colors.black87,
+            ),
+          ),
+          Text(
+            "Goal reached: ${consumed >= dailyGoal ? "Yes" : "No"}",
+            style: TextStyle(
+              color: consumed >= dailyGoal ? Colors.green : Colors.black87,
+            ),
+          ),
         ],
       ),
     );
