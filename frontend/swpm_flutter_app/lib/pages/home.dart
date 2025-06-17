@@ -51,9 +51,6 @@ class HomeState extends State<Home> {
     final dailyGoal = userData.dailyGoal ?? 2.5;
     final consumed = waterData.consumed;
     final percentage = waterData.percentageAchieved;
-    final drinks = waterData.drinkCount;
-    final reached = waterData.isGoalReached;
-
     final waterLevel = dailyGoal > 0 ? (consumed / dailyGoal).clamp(0.0, 1.0) : 0.0;
 
     final bottle = Center(
@@ -78,24 +75,24 @@ class HomeState extends State<Home> {
         border: Border.all(color: Colors.grey[300]!),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             "${consumed.toStringAsFixed(2)}L",
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: reached ? Colors.green : Colors.black87,
+              color: Colors.black87,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             "of your ${dailyGoal.toStringAsFixed(2)}L daily goal",
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
-          Text("Drinks: $drinks | Achieved: $percentage%"),
-          Text("Goal reached: ${reached ? "Yes" : "No"}"),
+          const SizedBox(height: 12),
+          Text("Achieved: $percentage%"),
         ],
       ),
     );
