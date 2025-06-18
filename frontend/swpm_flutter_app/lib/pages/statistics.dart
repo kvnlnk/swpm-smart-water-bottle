@@ -150,9 +150,14 @@ class _StatisticsState extends State<Statistics> {
     }
 
     final hours = hourlyMl.keys.toList()..sort();
-    final maxAmount = hourlyMl.values.isEmpty
-        ? 1000
-        : (hourlyMl.values.reduce((a, b) => a > b ? a : b) * 1.2).ceil();
+    // Maximum consumption in a single hour + 20% buffer for Y-axis scaling
+    final int maxAmount;
+    if (hourlyMl.values.isEmpty) {
+      maxAmount = 1000; // Default fallback value if no data is available
+    } else {
+      final maxEntry = hourlyMl.values.reduce((a, b) => a > b ? a : b); // Find the highest hourly value
+      maxAmount = (maxEntry * 1.2).ceil(); // Add 20% padding and round up for UX
+    }
 
     final yAxisSteps = 4;
     final yStepValue = (maxAmount / yAxisSteps).ceil();
