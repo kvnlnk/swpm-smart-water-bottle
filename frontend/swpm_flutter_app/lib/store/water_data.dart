@@ -22,6 +22,11 @@ class WaterDataNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updatePercentage(int newPercentage) {
+    _percentageAchieved = newPercentage;
+    notifyListeners();
+  }
+
   void clear() {
     _consumed = 0.0;
     _dailyGoal = 2.5;
