@@ -5,8 +5,10 @@ import 'package:provider/provider.dart';
 
 import 'package:swpm_flutter_app/pages/main_page.dart';
 import 'package:swpm_flutter_app/pages/sign_in.dart';
+
 import 'package:swpm_flutter_app/store/user_data.dart';
 import 'package:swpm_flutter_app/store/water_data.dart';
+import 'package:swpm_flutter_app/store/drinking_history_data.dart';
 
 Future<void> main() async {
   await dotenv.load(fileName: ".env");
@@ -20,6 +22,7 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => UserDataNotifier()),
         ChangeNotifierProvider(create: (_) => WaterDataNotifier()),
+        ChangeNotifierProvider(create: (_) => DrinkingHistoryDataNotifier()),
       ],
       child: const MyApp(),
     ),

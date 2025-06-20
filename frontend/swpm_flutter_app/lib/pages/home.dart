@@ -50,8 +50,16 @@ class HomeState extends State<Home> {
     final username = userData.username ?? '–';
     final dailyGoal = userData.dailyGoal ?? 2.5;
     final consumed = waterData.consumed;
+
+    final newPercentage = ((consumed / dailyGoal) * 100).round();
+    if (newPercentage != waterData.percentageAchieved) {
+      waterData.updatePercentage(newPercentage);
+    }
+
     final percentage = waterData.percentageAchieved;
     final waterLevel = dailyGoal > 0 ? (consumed / dailyGoal).clamp(0.0, 1.0) : 0.0;
+
+    final bool goalReached = percentage >= 100;
 
     final bottle = Center(
       child: SizedBox(
@@ -79,10 +87,10 @@ class HomeState extends State<Home> {
         children: [
           Text(
             "${consumed.toStringAsFixed(2)}L",
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: goalReached ? Colors.green : Colors.black87,
             ),
           ),
           const SizedBox(height: 4),
@@ -92,7 +100,14 @@ class HomeState extends State<Home> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
-          Text("Achieved: $percentage%"),
+          Text(
+            "Achieved: $percentage%",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: goalReached ? Colors.green : Colors.black,
+            ),
+          ),
         ],
       ),
     );

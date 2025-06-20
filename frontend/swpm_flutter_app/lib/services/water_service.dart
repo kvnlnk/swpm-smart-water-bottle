@@ -37,6 +37,30 @@ class WaterService {
     );
   }
 
+  Future<List<DrinkingEntry>> fetchDrinkingHistory() async {
+    final jwt = _client.auth.currentSession?.accessToken;
+    if (jwt == null) return [];
+
+    final url = Uri.parse('$_baseUrl/api/water/drinking-history');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $jwt',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        final entries = jsonData['drinkingEntries'] as List;
+        return entries.map((e) => DrinkingEntry.fromJson(e)).toList();
+      }
+    } catch (_) {}
+
+    return [];
+  }
+
   Future<void> addDrink(int amountMl) async {
     final jwt = _client.auth.currentSession?.accessToken;
     if (jwt == null) return;
@@ -81,6 +105,26 @@ class WaterSummary {
       percentageAchieved: json['percentageAchieved'],
       drinkCount: json['drinkCount'],
       isGoalReached: json['isGoalReached'],
+    );
+  }
+}
+
+class DrinkingEntry {
+  final String id;
+  final int amountMl;
+  final DateTime createdAt;
+
+  DrinkingEntry({
+    required this.id,
+    required this.amountMl,
+    required this.createdAt,
+  });
+
+  factory DrinkingEntry.fromJson(Map<String, dynamic> json) {
+    return DrinkingEntry(
+      id: json['id'],
+      amountMl: json['amountMl'],
+      createdAt: DateTime.parse(json['createdAt']),
     );
   }
 }
