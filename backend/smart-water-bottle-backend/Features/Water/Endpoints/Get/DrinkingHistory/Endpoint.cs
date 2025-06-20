@@ -59,7 +59,7 @@ public class Endpoint : EndpointWithoutRequest<Response>
                 {
                     Id = drinks.Id,
                     AmountMl = drinks.AmountMl,
-                    CreatedAt = drinks.CreatedAt
+                    CreatedAt = drinks.CreatedAt.AddHours(2),
                 }).ToList()
             };
             _logger.LogInformation("Found {Count} drinks totaling {Amount}ml for today", 
