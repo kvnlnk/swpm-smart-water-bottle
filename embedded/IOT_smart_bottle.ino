@@ -3,6 +3,7 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 #include <ArduinoJson.h>
+#include <ESP32Time.h> // https://github.com/fbiego/ESP32Time
 
 volatile int pulseCount = 0;
 const byte flowPin = 21;
@@ -12,6 +13,8 @@ const byte ledNormal = 4;
 const byte ledImportant = 16;
 
 int fuellrichtung = 1;
+
+ESP32Time rtc(0);  
 
 // BLE UUIDs
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
@@ -23,6 +26,8 @@ void IRAM_ATTR pulseCounter() {
   pulseCount++;
 }
 
+
+
 // BLE Callback für empfangene Daten
 class MyCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic* characteristic) override {
@@ -31,6 +36,7 @@ class MyCallbacks : public BLECharacteristicCallbacks {
 
     String input = String(value.c_str());
     StaticJsonDocument<128> doc;
+
 
     DeserializationError err = deserializeJson(doc, input);
     if (err) {
@@ -73,6 +79,7 @@ class MyCallbacks : public BLECharacteristicCallbacks {
 void setup() {
   Serial.begin(9600);
 
+  rtc.setTime(0, 35, 14, 26, 6, 2025); // 26.06.2025 14:35:00
   pinMode(flowPin, INPUT_PULLUP);
   pinMode(buttonPin, INPUT);
   pinMode(ledNone, OUTPUT);
@@ -124,7 +131,8 @@ void loop() {
   if (fuellrichtung == 1 && volumeMl != 0) {
     //BLE senden
     StaticJsonDocument<64> doc;
-    doc["volumeMl"] = volumeMl;
+    doc["amountMl"] = volumeMl;
+    doc["timestamp"] = rtc.getTime("%Y-%m-%dT%H:%M:%S.000Z"); // Senden der Zeit im notwendigen Format
 
     String output;
     serializeJson(doc, output);
