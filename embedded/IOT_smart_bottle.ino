@@ -32,8 +32,6 @@ class MyCallbacks : public BLECharacteristicCallbacks {
     String input = String(value.c_str());
     StaticJsonDocument<128> doc;
 
-    input.
-
     DeserializationError err = deserializeJson(doc, input);
     if (err) {
       Serial.print("JSON-Fehler: ");
