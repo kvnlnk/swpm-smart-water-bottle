@@ -15,8 +15,7 @@ class BleService {
   static final String serviceUuid = dotenv.env['SERVICE_UUID']!;
   static final String characteristicUuid = dotenv.env['CHARACTERISTIC_UUID']!;
 
-  // Subscribe to ESP32 notifications
-  static Future<Stream<Map<String, dynamic>>?> subscribeToWaterSensorData(
+  static Future<BluetoothCharacteristic?> _findWaterSensorCharacteristic(
       BluetoothDevice device) async {
     try {
       // Discover services
@@ -45,6 +44,19 @@ class BleService {
           break;
         }
       }
+
+      return dataCharacteristic;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Subscribe to ESP32 notifications
+  static Future<Stream<Map<String, dynamic>>?> subscribeToWaterSensorData(
+      BluetoothDevice device) async {
+    try {
+      BluetoothCharacteristic? dataCharacteristic =
+          await _findWaterSensorCharacteristic(device);
 
       if (dataCharacteristic == null) {
         return null;
@@ -176,6 +188,21 @@ class BleService {
 
       _onWaterDataReceived(device, amountMl, timestamp);
     }
+  }
+
+  Future<void> writeDataToDevice(
+      BluetoothDevice device, Map<String, dynamic> data) async {
+    String jsonData = json.encode(data);
+    List<int> bytes = utf8.encode(jsonData);
+
+    BluetoothCharacteristic? dataCharacteristic =
+        await _findWaterSensorCharacteristic(device);
+
+    if (dataCharacteristic == null) {
+      return;
+    }
+
+    dataCharacteristic.write(bytes);
   }
 
   // Water data received callback
