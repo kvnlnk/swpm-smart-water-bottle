@@ -53,7 +53,7 @@ class BluetoothDeviceDataNotifier extends ChangeNotifier {
     } else {
       Device newDevice = Device(
         name: deviceName,
-        icon: _getIconForDevice(deviceName),
+        icon: Icons.water_drop_outlined,
         isConnected: true,
         bluetoothDevice: bluetoothDevice,
       );
@@ -130,22 +130,6 @@ class BluetoothDeviceDataNotifier extends ChangeNotifier {
       );
 
       notifyListeners();
-    }
-  }
-
-  IconData _getIconForDevice(String deviceName) {
-    String lowerName = deviceName.toLowerCase();
-
-    if (lowerName.contains('water') || lowerName.contains('bottle')) {
-      return Icons.sports_bar;
-    } else if (lowerName.contains('scale') || lowerName.contains('weight')) {
-      return Icons.monitor_weight;
-    } else if (lowerName.contains('sensor')) {
-      return Icons.sensors;
-    } else if (lowerName.contains('esp') || lowerName.contains('arduino')) {
-      return Icons.developer_board;
-    } else {
-      return Icons.bluetooth;
     }
   }
 }
