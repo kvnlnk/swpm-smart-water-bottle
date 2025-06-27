@@ -37,6 +37,32 @@ class WaterService {
     );
   }
 
+  Future<Map<String, dynamic>?> fetchLastDrinkingTime() async {
+    final jwt = _client.auth.currentSession?.accessToken;
+    if (jwt == null) return null;
+
+    final url = Uri.parse('$_baseUrl/api/water/last-drinking-time');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $jwt',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        final shouldSendReminder = jsonData['shouldSendReminder'];
+        final drinkReminderType = jsonData['drinkReminderType'];
+        return {
+          'shouldSendReminder': shouldSendReminder,
+          'drinkReminderType': drinkReminderType
+        };
+      }
+    } catch (_) {}
+  }
+
   Future<List<DrinkingEntry>> fetchDrinkingHistory() async {
     final jwt = _client.auth.currentSession?.accessToken;
     if (jwt == null) return [];
