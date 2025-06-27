@@ -61,11 +61,11 @@ class WaterService {
     return [];
   }
 
-  Future<void> addDrink(int amountMl) async {
+  Future<void> addDrink(int amountMl, String timestamp) async {
     final jwt = _client.auth.currentSession?.accessToken;
     if (jwt == null) return;
 
-    final url = Uri.parse('$_baseUrl/api/water/drink');
+    final url = Uri.parse('$_baseUrl/api/water/log-drinking');
 
     try {
       await http.post(
@@ -74,9 +74,11 @@ class WaterService {
           'Authorization': 'Bearer $jwt',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({'amountMl': amountMl}),
+        body: jsonEncode({'amountMl': amountMl, 'timestamp': timestamp}),
       );
-    } catch (_) {}
+    } catch (e) {
+      print(e);
+    }
   }
 }
 

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:swpm_flutter_app/services/water_service.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 import 'package:swpm_flutter_app/widgets/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,22 +23,22 @@ class BleService {
       List<BluetoothService> services = await device.discoverServices();
 
       // Find the water sensor service
-      BluetoothService? waterService;
+      BluetoothService? waterBottleService;
       for (BluetoothService service in services) {
         if (service.uuid.str.toLowerCase() == serviceUuid.toLowerCase()) {
-          waterService = service;
+          waterBottleService = service;
           break;
         }
       }
 
-      if (waterService == null) {
+      if (waterBottleService == null) {
         return null;
       }
 
       // Find the characteristic
       BluetoothCharacteristic? dataCharacteristic;
       for (BluetoothCharacteristic characteristic
-          in waterService.characteristics) {
+          in waterBottleService.characteristics) {
         if (characteristic.uuid.str.toLowerCase() ==
             characteristicUuid.toLowerCase()) {
           dataCharacteristic = characteristic;
@@ -180,7 +181,8 @@ class BleService {
   // Water data received callback
   void _onWaterDataReceived(
       BluetoothDevice device, double amountMl, String timestamp) {
-    print(amountMl);
+    WaterService wataterService = WaterService();
+    wataterService.addDrink(amountMl.toInt(), timestamp);
   }
 
   // Device management
