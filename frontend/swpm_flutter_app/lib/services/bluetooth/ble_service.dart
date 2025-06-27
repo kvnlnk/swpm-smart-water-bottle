@@ -102,6 +102,17 @@ class BleService {
 
       _onWaterDataReceived(device, amountMl, timestamp);
     }
+
+    if (data.containsKey('syncRequest') && data['syncRequest']) {
+      String currentTime = DateTime.now().toUtc().toIso8601String();
+
+      Map<String, dynamic> syncResponse = {
+        'syncConfirmed': true,
+        'timestamp': currentTime
+      };
+
+      BleOperations.writeDataToDevice(device, syncResponse);
+    }
   }
 
   void _onWaterDataReceived(
