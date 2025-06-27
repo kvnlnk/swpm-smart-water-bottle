@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 import 'package:swpm_flutter_app/widgets/utils.dart';
 
@@ -9,9 +10,8 @@ class BleService {
 
   BleService(this._store);
 
-  static const String serviceUuid = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
-  static const String characteristicUuid =
-      "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+  static final String serviceUuid = dotenv.env['SERVICE_UUID']!;
+  static final String characteristicUuid = dotenv.env['CHARACTERISTIC_UUID']!;
 
   // Subscribe to ESP32 notifications
   static Future<Stream<Map<String, dynamic>>?> subscribeToWaterSensorData(
