@@ -9,7 +9,7 @@ import 'package:swpm_flutter_app/services/settings_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Settings extends StatefulWidget {
-  const Settings({Key? key}) : super(key: key);
+  const Settings({super.key});
 
   @override
   SettingsState createState() => SettingsState();
@@ -61,8 +61,9 @@ class SettingsState extends State<Settings> {
     );
 
     if (success) {
-      if (notificationsEnabled != null)
+      if (notificationsEnabled != null) {
         store.updateNotifications(notificationsEnabled);
+      }
       if (waterTarget != null) store.updateDailyGoal(waterTarget);
     }
   }
@@ -372,7 +373,7 @@ class SettingsState extends State<Settings> {
       context: context,
       builder: (context) {
         return Dialog(
-          child: Container(
+          child: SizedBox(
             height: 600,
             width: double.maxFinite,
             child: Column(

@@ -61,6 +61,7 @@ class BleService {
     _store.connectionSubscriptions.clear();
   }
 
+  // ignore: unused_element
   void _cancelAllDataSubscriptions() {
     for (var subscription in _store.dataSubscriptions.values) {
       subscription.cancel();
