@@ -76,9 +76,7 @@ class WaterService {
         },
         body: jsonEncode({'amountMl': amountMl, 'timestamp': timestamp}),
       );
-    } catch (e) {
-      print(e);
-    }
+    } catch (_) {}
   }
 }
 
