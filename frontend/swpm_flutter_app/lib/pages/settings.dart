@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:swpm_flutter_app/models/device.dart';
 import 'package:swpm_flutter_app/screens/scan_screen.dart';
 import 'package:swpm_flutter_app/store/user_data.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
@@ -107,10 +108,24 @@ class SettingsState extends State<Settings> {
                 return buildSection(
                   title: 'Device Pairing',
                   children: [
-                    buildReadOnlyTile("Connected Device",
+                    buildReadOnlyTile("Connected Devices",
                         '${bluetoothStore.connectedCount.toString()} Connected'),
                     ...buildDevicesTiles(bluetoothStore.devices),
                     buildBluetoothScanningTile("Add New Device", "Scan")
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            Consumer<BluetoothDeviceDataNotifier>(
+              builder: (context, bluetoothStore, child) {
+                return buildSection(
+                  title: 'Debug',
+                  children: [
+                    ...bluetoothStore.connectedDevices
+                        .map((device) => buildSimpleDataTile(device)),
+                    if (bluetoothStore.connectedDevices.isEmpty)
+                      buildReadOnlyTile("Status", "No devices connected"),
                   ],
                 );
               },
@@ -159,6 +174,21 @@ class SettingsState extends State<Settings> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget buildSimpleDataTile(Device device) {
+    String displayValue = "No data";
+
+    if (device.lastData != null && device.lastData!.containsKey('amountMl')) {
+      displayValue = "${device.lastData!['amountMl']} ml";
+    } else if (device.lastData != null) {
+      displayValue = "Waiting...";
+    }
+
+    return buildListTile(
+      title: device.name,
+      trailing: Text(displayValue),
     );
   }
 
