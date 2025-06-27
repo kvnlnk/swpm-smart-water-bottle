@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:swpm_flutter_app/services/bluetooth/bluetooth_device_extension.dart';
 import 'package:swpm_flutter_app/services/water_service.dart';
@@ -9,8 +11,67 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Handles device connections, monitoring, and water data processing
 class BleService {
   final BluetoothDeviceDataNotifier _store;
+  final WaterService _waterService = WaterService();
 
-  BleService(this._store);
+  // Timer for periodic fetches
+  Timer? _periodicFetchTimer;
+  static const Duration _fetchInterval = Duration(minutes: 5);
+
+  BleService(this._store) {
+    // Store Listener hinzufügen um auf Connection Changes zu reagieren
+    // Store listener to react to connection changes so we can start/stop periodic fetches
+    _store.addListener(_onStoreChanged);
+  }
+
+  // Will only be called if store changes
+  void _onStoreChanged() {
+    if (_store.hasConnectedDevices) {
+      _startPeriodicFetch();
+    } else {
+      _stopPeriodicFetch();
+    }
+  }
+
+  void _startPeriodicFetch() {
+    if (_periodicFetchTimer?.isActive == true) {
+      return;
+    }
+    // Call periodic fetch for each connected device
+    for (var deviceData in _store.devices) {
+      if (deviceData.isConnected && deviceData.bluetoothDevice != null) {
+        _performPeriodicFetch(deviceData.bluetoothDevice!);
+      }
+    }
+
+    _periodicFetchTimer = Timer.periodic(_fetchInterval, (timer) {
+      for (var deviceData in _store.devices) {
+        if (deviceData.isConnected && deviceData.bluetoothDevice != null) {
+          _performPeriodicFetch(deviceData.bluetoothDevice!);
+        }
+      }
+    });
+  }
+
+  void _stopPeriodicFetch() {
+    if (_periodicFetchTimer?.isActive == true) {
+      _periodicFetchTimer?.cancel();
+      _periodicFetchTimer = null;
+    }
+  }
+
+  Future<void> _performPeriodicFetch(BluetoothDevice device) async {
+    if (!_store.hasConnectedDevices) {
+      return;
+    }
+    try {
+      final result = await _waterService.fetchLastDrinkingTime();
+      if (result == null) {
+        return;
+      }
+
+      BleOperations.writeDataToDevice(device, result);
+    } catch (_) {}
+  }
 
   // Connection monitoring
   void _startMonitoringDevice(BluetoothDevice bluetoothDevice) {
