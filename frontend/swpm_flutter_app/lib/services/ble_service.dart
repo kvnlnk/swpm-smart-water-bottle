@@ -160,19 +160,10 @@ class BleService {
       _store.dataSubscriptions[deviceId] = dataStream.listen(
         (data) => _handleReceivedData(bluetoothDevice, data),
       );
-
-      // Update device with data stream
-      final index = _store.devices
-          .indexWhere((d) => d.bluetoothDevice?.remoteId.str == deviceId);
-
-      if (index != -1) {
-        _store.devices[index] =
-            _store.devices[index].copyWith(dataStream: dataStream);
-      }
     }
   }
 
-  // NEW: Handle received data from ESP32
+  // Handle received data from ESP32
   void _handleReceivedData(BluetoothDevice device, Map<String, dynamic> data) {
     _store.updateDeviceData(device, data);
 
@@ -185,7 +176,7 @@ class BleService {
     }
   }
 
-  // NEW: Water data received callback - customize this!
+  // Water data received callback
   void _onWaterDataReceived(
       BluetoothDevice device, double amountMl, String timestamp) {
     print(amountMl);
@@ -236,7 +227,6 @@ class BleService {
             storeDevice.bluetoothDevice!.remoteId.str);
 
         if (!isActuallyConnected) {
-          // Store-Methode verwenden statt direkter Manipulation
           _store.disconnectDevice(storeDevice.bluetoothDevice!);
 
           String deviceId = storeDevice.bluetoothDevice!.remoteId.str;
@@ -254,7 +244,6 @@ class BleService {
           storeDevice.isConnected);
 
       if (!isInStore) {
-        // Store-Methode verwenden statt direkter Manipulation
         _store.addOrUpdateDevice(actualDevice);
         _startMonitoringDevice(actualDevice);
       }
