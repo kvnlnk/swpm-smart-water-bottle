@@ -1,121 +1,75 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import '../services/ble_service.dart';
-
-class Device {
-  final String name;
-  final IconData icon;
-  final bool isConnected;
-  final BluetoothDevice? bluetoothDevice;
-
-  Device({
-    required this.name,
-    required this.icon,
-    required this.isConnected,
-    this.bluetoothDevice,
-  });
-}
+import 'package:swpm_flutter_app/models/device.dart';
 
 class BluetoothDeviceDataNotifier extends ChangeNotifier {
-  List<Device> _devices = [
-    Device(
-        name: "Smart Water Bottle", icon: Icons.sports_bar, isConnected: true),
-    Device(
-        name: "Digital Scale", icon: Icons.monitor_weight, isConnected: true),
-  ];
-
+  List<Device> _devices = [];
   bool _isScanning = false;
   List<BluetoothDevice> _availableDevices = [];
   String? _scanError;
+  final Map<String, StreamSubscription> connectionSubscriptions = {};
+  final Map<String, StreamSubscription> dataSubscriptions = {};
 
   List<Device> get devices => List.unmodifiable(_devices);
+  List<Device> get connectedDevices =>
+      _devices.where((d) => d.isConnected).toList();
   int get connectedCount => _devices.where((d) => d.isConnected).length;
   bool get isScanning => _isScanning;
   List<BluetoothDevice> get availableDevices =>
       List.unmodifiable(_availableDevices);
   String? get scanError => _scanError;
+  bool get hasConnectedDevices => connectedCount > 0;
 
-  Future<void> scanForDevices() async {
-    _isScanning = true;
-    _availableDevices.clear();
-    _scanError = null;
+  void setDevices(List<Device> devices) {
+    _devices = devices;
     notifyListeners();
+  }
 
-    try {
-      List<BluetoothDevice> foundDevices = await BleService.scanForDevices();
-      _availableDevices = foundDevices;
-    } catch (e) {
-      _scanError = e.toString();
-      print('Scan error: $e');
-    } finally {
-      _isScanning = false;
+  void updateDevice(Device updatedDevice) {
+    final index = _devices.indexWhere((d) =>
+        d.bluetoothDevice?.remoteId.str ==
+        updatedDevice.bluetoothDevice?.remoteId.str);
+    if (index != -1) {
+      _devices[index] = updatedDevice;
       notifyListeners();
     }
   }
 
-  Future<void> connectToDevice(BluetoothDevice bluetoothDevice) async {
-    try {
-      await BleService.connectToDevice(bluetoothDevice);
+  void addOrUpdateDevice(BluetoothDevice bluetoothDevice) {
+    String deviceName = bluetoothDevice.platformName.isNotEmpty
+        ? bluetoothDevice.platformName
+        : bluetoothDevice.remoteId.str;
 
-      // Check if device is already in list
-      bool deviceExists =
-          _devices.any((d) => d.bluetoothDevice?.id == bluetoothDevice.id);
+    final existingIndex = _devices.indexWhere(
+        (d) => d.bluetoothDevice?.remoteId.str == bluetoothDevice.remoteId.str);
 
-      if (!deviceExists) {
-        // Add to connected devices
-        Device newDevice = Device(
-          name: bluetoothDevice.name.isEmpty
-              ? 'Unknown Device'
-              : bluetoothDevice.name,
-          icon: _getDeviceIcon(bluetoothDevice.name),
-          isConnected: true,
-          bluetoothDevice: bluetoothDevice,
-        );
-
-        _devices.add(newDevice);
-        notifyListeners();
-      }
-    } catch (e) {
-      print('Connection error: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> disconnectDevice(String deviceName) async {
-    final device = _devices.firstWhere((d) => d.name == deviceName);
-    if (device.bluetoothDevice != null) {
-      try {
-        await BleService.disconnectDevice(device.bluetoothDevice!);
-        updateDeviceConnection(deviceName, false);
-      } catch (e) {
-        print('Disconnect error: $e');
-        rethrow;
-      }
-    }
-  }
-
-  IconData _getDeviceIcon(String deviceName) {
-    String name = deviceName.toLowerCase();
-    if (name.contains('bottle') || name.contains('water')) {
-      return Icons.sports_bar;
-    } else if (name.contains('scale') || name.contains('weight')) {
-      return Icons.monitor_weight;
-    } else if (name.contains('watch') || name.contains('fitness')) {
-      return Icons.watch;
-    } else {
-      return Icons.bluetooth;
-    }
-  }
-
-  void updateDeviceConnection(String deviceName, bool isConnected) {
-    final index = _devices.indexWhere((d) => d.name == deviceName);
-    if (index != -1) {
-      _devices[index] = Device(
-        name: _devices[index].name,
-        icon: _devices[index].icon,
-        isConnected: isConnected,
-        bluetoothDevice: _devices[index].bluetoothDevice,
+    if (existingIndex != -1) {
+      _devices[existingIndex] = _devices[existingIndex].copyWith(
+        isConnected: true,
+        bluetoothDevice: bluetoothDevice,
       );
+    } else {
+      Device newDevice = Device(
+        name: deviceName,
+        icon: _getIconForDevice(deviceName),
+        isConnected: true,
+        bluetoothDevice: bluetoothDevice,
+      );
+      _devices.add(newDevice);
+    }
+
+    notifyListeners();
+  }
+
+  void updateDeviceData(BluetoothDevice device, Map<String, dynamic> data) {
+    String deviceId = device.remoteId.str;
+    final index =
+        _devices.indexWhere((d) => d.bluetoothDevice?.remoteId.str == deviceId);
+
+    if (index != -1) {
+      _devices[index] = _devices[index].copyWith(lastData: data);
       notifyListeners();
     }
   }
@@ -125,8 +79,24 @@ class BluetoothDeviceDataNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  void removeDevice(String deviceName) {
-    _devices.removeWhere((d) => d.name == deviceName);
+  void removeDeviceById(String deviceId) {
+    _devices.removeWhere((d) => d.bluetoothDevice?.remoteId.str == deviceId);
+    notifyListeners();
+  }
+
+  void setScanState(bool scanning, {String? error}) {
+    _isScanning = scanning;
+    _scanError = error;
+    notifyListeners();
+  }
+
+  void setAvailableDevices(List<BluetoothDevice> devices) {
+    _availableDevices = devices;
+    notifyListeners();
+  }
+
+  void clearAllDevices() {
+    _devices.clear();
     notifyListeners();
   }
 
@@ -134,5 +104,38 @@ class BluetoothDeviceDataNotifier extends ChangeNotifier {
     _availableDevices.clear();
     _scanError = null;
     notifyListeners();
+  }
+
+  void disconnectDevice(BluetoothDevice bluetoothDevice) {
+    String deviceId = bluetoothDevice.remoteId.str;
+    final index =
+        _devices.indexWhere((d) => d.bluetoothDevice?.remoteId.str == deviceId);
+
+    if (index != -1) {
+      _devices[index] = _devices[index].copyWith(
+        isConnected: false,
+        bluetoothDevice: null,
+        dataStream: null,
+        lastData: null,
+      );
+
+      notifyListeners();
+    }
+  }
+
+  IconData _getIconForDevice(String deviceName) {
+    String lowerName = deviceName.toLowerCase();
+
+    if (lowerName.contains('water') || lowerName.contains('bottle')) {
+      return Icons.sports_bar;
+    } else if (lowerName.contains('scale') || lowerName.contains('weight')) {
+      return Icons.monitor_weight;
+    } else if (lowerName.contains('sensor')) {
+      return Icons.sensors;
+    } else if (lowerName.contains('esp') || lowerName.contains('arduino')) {
+      return Icons.developer_board;
+    } else {
+      return Icons.bluetooth;
+    }
   }
 }
