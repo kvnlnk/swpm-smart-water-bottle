@@ -3,7 +3,7 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 #include <ArduinoJson.h>
-#include <ESP32Time.h> // https://github.com/fbiego/ESP32Time
+#include <ESP32Time.h>
 
 volatile int pulseCount = 0;
 const byte flowPin = 21;
@@ -28,8 +28,9 @@ void IRAM_ATTR pulseCounter() {
 
 
 
-// BLE Callback für empfangene Daten
+// // Klasse, welche BLE Callback für empfangene Daten betreibt
 class MyCallbacks : public BLECharacteristicCallbacks {
+
   void onWrite(BLECharacteristic* characteristic) override {
     std::string value = std::string((char*)characteristic->getData(), characteristic->getLength());
     if (value.length() == 0) return;
@@ -75,6 +76,19 @@ class MyCallbacks : public BLECharacteristicCallbacks {
   }
 };
 
+// Klasse, welche auch Verbindungs-Callbacks eingeht und handelt
+class MyServerCallbacks : public BLEServerCallbacks{
+    void onConnect(BLEServer* pServer){
+    Serial.println("Mit Client verbunden");
+  }
+  // Advertising bei Disconnect
+  void onDisconnect(BLEServer* pServer){
+    Serial.println("Client getrennt, starte Advertising");
+    delay(500); //Sicherheitsdelay
+    BLEDevice::startAdvertising();
+  }
+};
+
 
 void setup() {
   Serial.begin(9600);
@@ -89,6 +103,7 @@ void setup() {
 
   BLEDevice::init("WasserSensor_BLE");
   BLEServer* pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());  
   BLEService* pService = pServer->createService(SERVICE_UUID);
 
   pCharacteristic = pService->createCharacteristic(
@@ -102,6 +117,7 @@ void setup() {
   pCharacteristic->setCallbacks(new MyCallbacks());
   pService->start();
 
+  // Advertising beim Neustart
   BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
   pAdvertising->start();
 }
@@ -132,7 +148,7 @@ void loop() {
     //BLE senden
     StaticJsonDocument<64> doc;
     doc["amountMl"] = volumeMl;
-    doc["timestamp"] = rtc.getTime("%Y-%m-%dT%H:%M:%S.000Z"); // Senden der Zeit im notwendigen Format
+    doc["timestamp"] = rtc.getTime("%Y-%m-%dT%H:%M:%S.000Z");
 
     String output;
     serializeJson(doc, output);
