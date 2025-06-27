@@ -143,7 +143,7 @@ class SettingsState extends State<Settings> {
                               child: ElevatedButton(
                                 onPressed: () => _sendCommand(
                                     bluetoothStore.connectedDevices.first, {
-                                  'DrinkReminderTyp': 0,
+                                  'DrinkReminderType': 0,
                                 }),
                                 child: const Text('None'),
                               ),
@@ -154,7 +154,7 @@ class SettingsState extends State<Settings> {
                               child: ElevatedButton(
                                 onPressed: () => _sendCommand(
                                     bluetoothStore.connectedDevices.first, {
-                                  'DrinkReminderTyp': 1,
+                                  'DrinkReminderType': 1,
                                 }),
                                 child: const Text('Nomal'),
                               ),
@@ -165,7 +165,7 @@ class SettingsState extends State<Settings> {
                               child: ElevatedButton(
                                 onPressed: () => _sendCommand(
                                     bluetoothStore.connectedDevices.first, {
-                                  'DrinkReminderTyp': 2,
+                                  'DrinkReminderType': 2,
                                 }),
                                 child: const Text('Important'),
                               ),
