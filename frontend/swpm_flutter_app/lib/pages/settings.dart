@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:swpm_flutter_app/models/device.dart';
 import 'package:swpm_flutter_app/screens/scan_screen.dart';
+import 'package:swpm_flutter_app/services/ble_service.dart';
 import 'package:swpm_flutter_app/store/user_data.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 import 'package:swpm_flutter_app/services/settings_service.dart';
@@ -126,6 +127,48 @@ class SettingsState extends State<Settings> {
                         .map((device) => buildSimpleDataTile(device)),
                     if (bluetoothStore.connectedDevices.isEmpty)
                       buildReadOnlyTile("Status", "No devices connected"),
+
+                    // Einfacher Button
+                    if (bluetoothStore.connectedDevices.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () => _sendCommand(
+                                    bluetoothStore.connectedDevices.first, {
+                                  'DrinkReminderTyp': 0,
+                                }),
+                                child: const Text('None'),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () => _sendCommand(
+                                    bluetoothStore.connectedDevices.first, {
+                                  'DrinkReminderTyp': 1,
+                                }),
+                                child: const Text('Nomal'),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () => _sendCommand(
+                                    bluetoothStore.connectedDevices.first, {
+                                  'DrinkReminderTyp': 2,
+                                }),
+                                child: const Text('Important'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 );
               },
@@ -136,6 +179,14 @@ class SettingsState extends State<Settings> {
         ),
       ),
     );
+  }
+
+  Future<void> _sendCommand(Device device, Map<String, dynamic> data) async {
+    final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
+    if (device.bluetoothDevice != null) {
+      await BleService(bluetoothStore)
+          .writeDataToDevice(device.bluetoothDevice!, data);
+    }
   }
 
   Widget buildSection({required String title, required List<Widget> children}) {
