@@ -15,13 +15,13 @@ class WaterBottle extends StatelessWidget {
 
   /// Create a regular bottle, you can customize it's part with
   /// [waterColor], [bottleColor], [capColor].
-  WaterBottle({
-    Key? key,
+  const WaterBottle({
+    super.key,
     this.waterColor = Colors.blue,
     this.bottleColor = Colors.blue,
     this.capColor = Colors.blueGrey,
     this.waterLevel = 0.5,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
