@@ -14,10 +14,10 @@ class MainPageState extends State<MainPage> {
   int currentPage = 0;
 
   List<Widget> get pages => [
-    const Home(),
-    const Statistics(),
-    const Settings(),
-  ];
+        const Home(),
+        const Statistics(),
+        const Settings(),
+      ];
 
   String get appBarTitle {
     switch (currentPage) {
