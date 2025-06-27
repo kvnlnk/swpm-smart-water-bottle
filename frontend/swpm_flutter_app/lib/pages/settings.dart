@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:swpm_flutter_app/models/device.dart';
 import 'package:swpm_flutter_app/screens/scan_screen.dart';
-import 'package:swpm_flutter_app/services/ble_service.dart';
+import 'package:swpm_flutter_app/services/bluetooth/ble_service.dart';
 import 'package:swpm_flutter_app/store/user_data.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 import 'package:swpm_flutter_app/services/settings_service.dart';

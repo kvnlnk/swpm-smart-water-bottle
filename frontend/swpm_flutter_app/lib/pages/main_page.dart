@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:swpm_flutter_app/pages/home.dart';
 import 'package:swpm_flutter_app/pages/statistics.dart';
 import 'package:swpm_flutter_app/pages/settings.dart';
-import 'package:swpm_flutter_app/services/ble_service.dart';
+import 'package:swpm_flutter_app/services/bluetooth/ble_service.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 
 class MainPage extends StatefulWidget {

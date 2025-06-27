@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:provider/provider.dart';
-import 'package:swpm_flutter_app/services/ble_service.dart';
+import 'package:swpm_flutter_app/services/bluetooth/bluetooth_device_extension.dart';
+import 'package:swpm_flutter_app/services/bluetooth/ble_service.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 
 import '../utils/snackbar.dart';
