@@ -74,6 +74,16 @@ class BluetoothDeviceDataNotifier extends ChangeNotifier {
     }
   }
 
+  void updateDeviceName(BluetoothDevice device, String? name) {
+    String deviceId = device.remoteId.str;
+    final index =
+        _devices.indexWhere((d) => d.bluetoothDevice?.remoteId.str == deviceId);
+    if (index != -1) {
+      _devices[index] = _devices[index].copyWith(name: name);
+      notifyListeners();
+    }
+  }
+
   void addDevice(Device device) {
     _devices.add(device);
     notifyListeners();

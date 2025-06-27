@@ -4,6 +4,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 import 'package:swpm_flutter_app/widgets/utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BleService {
   final BluetoothDeviceDataNotifier _store;
@@ -184,6 +185,7 @@ class BleService {
 
   // Device management
   void addConnectedDevice(BluetoothDevice bluetoothDevice) async {
+    saveDeviceForAutoConnect(bluetoothDevice);
     _store.addOrUpdateDevice(bluetoothDevice);
 
     _startMonitoringDevice(bluetoothDevice);
@@ -274,6 +276,39 @@ class BleService {
 
   void stopMonitoringAllDevices() {
     _cancelAllConnectionSubscriptions();
+  }
+
+  Future<bool> autoConnectToSavedDevice() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? remoteId = prefs.getString('saved_device_id');
+    final String? deviceName = prefs.getString('saved_device_name');
+
+    if (remoteId == null) return false;
+
+    var device = BluetoothDevice.fromId(remoteId);
+    await device.connectAndUpdateStream();
+
+    _store.addOrUpdateDevice(device);
+    _store.updateDeviceName(device, deviceName);
+    _startMonitoringDevice(device);
+    await _subscribeToDeviceData(device);
+
+    return true;
+  }
+
+  Future<void> saveDeviceForAutoConnect(BluetoothDevice device) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Save device id
+    await prefs.setString('saved_device_id', device.remoteId.str);
+
+    // Save device name
+    String deviceName = device.platformName.isNotEmpty
+        ? device.platformName
+        : device.advName.isNotEmpty
+            ? device.advName
+            : 'Unknown Device';
+
+    await prefs.setString('saved_device_name', deviceName);
   }
 }
 
