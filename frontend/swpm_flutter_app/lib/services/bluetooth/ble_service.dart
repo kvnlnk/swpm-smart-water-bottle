@@ -15,7 +15,7 @@ class BleService {
 
   // Timer for periodic fetches
   Timer? _periodicFetchTimer;
-  static const Duration _fetchInterval = Duration(minutes: 5);
+  static const Duration _fetchInterval = Duration(minutes: 2);
 
   BleService(this._store) {
     // Store Listener hinzufügen um auf Connection Changes zu reagieren
@@ -35,12 +35,6 @@ class BleService {
   void _startPeriodicFetch() {
     if (_periodicFetchTimer?.isActive == true) {
       return;
-    }
-    // Call periodic fetch for each connected device
-    for (var deviceData in _store.devices) {
-      if (deviceData.isConnected && deviceData.bluetoothDevice != null) {
-        _performPeriodicFetch(deviceData.bluetoothDevice!);
-      }
     }
 
     _periodicFetchTimer = Timer.periodic(_fetchInterval, (timer) {
@@ -281,6 +275,7 @@ class BleService {
 
   void stopMonitoringAllDevices() {
     _cancelAllConnectionSubscriptions();
+    _stopPeriodicFetch();
   }
 
   // Auto-connect functionality
@@ -325,5 +320,12 @@ class BleService {
       await prefs.remove('saved_device_id');
       await prefs.remove('saved_device_name');
     }
+  }
+
+  void dispose() {
+    _stopPeriodicFetch();
+    _store.removeListener(_onStoreChanged);
+    _cancelAllConnectionSubscriptions();
+    _cancelAllDataSubscriptions();
   }
 }
