@@ -53,14 +53,11 @@ class WaterService {
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
-        final shouldSendReminder = jsonData['shouldSendReminder'];
         final drinkReminderType = jsonData['drinkReminderType'];
-        return {
-          'shouldSendReminder': shouldSendReminder,
-          'drinkReminderType': drinkReminderType
-        };
+        return {'DrinkReminderType': drinkReminderType};
       }
     } catch (_) {}
+    return null;
   }
 
   Future<List<DrinkingEntry>> fetchDrinkingHistory() async {
