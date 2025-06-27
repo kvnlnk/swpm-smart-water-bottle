@@ -12,7 +12,7 @@ class BluetoothDeviceDataNotifier extends ChangeNotifier {
   final Map<String, StreamSubscription> connectionSubscriptions = {};
   final Map<String, StreamSubscription> dataSubscriptions = {};
 
-  List<Device> get devices => List.unmodifiable(_devices);
+  List<Device> get devices => _devices;
   List<Device> get connectedDevices =>
       _devices.where((d) => d.isConnected).toList();
   int get connectedCount => _devices.where((d) => d.isConnected).length;

@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:swpm_flutter_app/models/device.dart';
 import 'package:swpm_flutter_app/screens/scan_screen.dart';
+import 'package:swpm_flutter_app/services/bluetooth/ble_operations.dart';
 import 'package:swpm_flutter_app/services/bluetooth/ble_service.dart';
+import 'package:swpm_flutter_app/services/bluetooth/bluetooth_device_extension.dart';
 import 'package:swpm_flutter_app/store/user_data.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 import 'package:swpm_flutter_app/services/settings_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:swpm_flutter_app/utils/snackbar.dart';
 
 class Settings extends StatefulWidget {
   const Settings({super.key});
@@ -180,14 +184,6 @@ class SettingsState extends State<Settings> {
         ),
       ),
     );
-  }
-
-  Future<void> _sendCommand(Device device, Map<String, dynamic> data) async {
-    final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
-    if (device.bluetoothDevice != null) {
-      await BleService(bluetoothStore)
-          .writeDataToDevice(device.bluetoothDevice!, data);
-    }
   }
 
   Widget buildSection({required String title, required List<Widget> children}) {
@@ -446,8 +442,56 @@ class SettingsState extends State<Settings> {
               ],
             ),
           ),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                showDisconnectDialog(device);
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                child: Icon(
+                  Icons.close,
+                  size: 20,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  void showDisconnectDialog(Device device) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Disconnect Device'),
+          content:
+              Text('Are you sure you want to disconnect "${device.name}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _performDisconnect(device.bluetoothDevice!);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text(
+                'Disconnect',
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -522,5 +566,30 @@ class SettingsState extends State<Settings> {
         ),
       ),
     );
+  }
+
+  Future<void> _sendCommand(Device device, Map<String, dynamic> data) async {
+    final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
+    if (device.bluetoothDevice != null) {
+      await BleService(bluetoothStore)
+          .writeDataToDevice(device.bluetoothDevice!, data);
+    }
+  }
+
+  Future<void> _performDisconnect(BluetoothDevice device) async {
+    final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
+    try {
+      await device.disconnectAndUpdateStream();
+
+      BleService(bluetoothStore).removeConnectedDevice(device);
+      BleService(bluetoothStore).removeSavedDeviceData(device);
+
+      Snackbar.show(ABC.c,
+          "Disconnected from ${device.platformName.isNotEmpty ? device.platformName : device.remoteId.str}",
+          success: true);
+    } catch (e) {
+      Snackbar.show(ABC.b, prettyException("Disconnect Error:", e),
+          success: false);
+    }
   }
 }

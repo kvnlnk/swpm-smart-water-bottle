@@ -255,4 +255,14 @@ class BleService {
 
     await prefs.setString('saved_device_name', deviceName);
   }
+
+  Future<void> removeSavedDeviceData(BluetoothDevice device) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? savedDeviceId = prefs.getString('saved_device_id');
+
+    if (savedDeviceId == device.remoteId.str) {
+      await prefs.remove('saved_device_id');
+      await prefs.remove('saved_device_name');
+    }
+  }
 }

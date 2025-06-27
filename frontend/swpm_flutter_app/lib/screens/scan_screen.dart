@@ -99,22 +99,6 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
-  Future<void> onDisconnectPressed(BluetoothDevice device) async {
-    final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
-    try {
-      await device.disconnect();
-
-      BleService(bluetoothStore).removeConnectedDevice(device);
-
-      Snackbar.show(ABC.c,
-          "Disconnected from ${device.platformName.isNotEmpty ? device.platformName : device.remoteId.str}",
-          success: true);
-    } catch (e) {
-      Snackbar.show(ABC.b, prettyException("Disconnect Error:", e),
-          success: false);
-    }
-  }
-
   Future onRefresh() {
     final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
     if (_isScanning == false) {
