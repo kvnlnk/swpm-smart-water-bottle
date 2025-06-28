@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:provider/provider.dart';
-import 'package:swpm_flutter_app/models/device.dart';
-import 'package:swpm_flutter_app/screens/scan_screen.dart';
-import 'package:swpm_flutter_app/services/bluetooth/ble_service.dart';
-import 'package:swpm_flutter_app/services/bluetooth/bluetooth_device_extension.dart';
+import 'package:swpm_flutter_app/widgets/setting_tiles/account_tile.dart';
+import 'package:swpm_flutter_app/widgets/setting_tiles/daily_goal_tile.dart';
+import 'package:swpm_flutter_app/widgets/setting_tiles/debug_tile.dart';
+import 'package:swpm_flutter_app/widgets/setting_tiles/device_paring_tile.dart';
+import 'package:swpm_flutter_app/widgets/setting_tiles/notifications_tile.dart';
+import 'package:swpm_flutter_app/widgets/setting_tiles/profile_tile.dart';
 import 'package:swpm_flutter_app/store/user_data.dart';
-import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 import 'package:swpm_flutter_app/services/settings_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:swpm_flutter_app/utils/snackbar.dart';
 
 class Settings extends StatefulWidget {
   const Settings({super.key});
@@ -93,92 +91,57 @@ class SettingsState extends State<Settings> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            buildSection(
-                title: 'Daily Goal', children: [buildWaterTargetTile()]),
-            const SizedBox(height: 20),
-            buildSection(
-                title: 'Notifications', children: [buildNotificationToggle()]),
-            const SizedBox(height: 20),
-            buildSection(
-              title: 'Profile',
-              children: [
-                buildReadOnlyTile("Username", username),
-                buildProfileTile("Weight", weight, 0.0, 125.0, "kg"),
-                buildProfileTile("Height", height, 0.0, 200.0, "cm"),
-              ],
+            DailyGoalTile(
+              buildSection: buildSection,
+              buildListTile: buildListTile,
+              buildTiledContainer: buildTiledContainer,
+              waterTarget: waterTarget,
+              onUpdateValue: updateLocalState,
             ),
             const SizedBox(height: 20),
-            Consumer<BluetoothDeviceDataNotifier>(
-              builder: (context, bluetoothStore, child) {
-                return buildSection(
-                  title: 'Device Pairing',
-                  children: [
-                    buildReadOnlyTile("Connected Devices",
-                        '${bluetoothStore.connectedCount.toString()} Connected'),
-                    ...buildDevicesTiles(bluetoothStore.devices),
-                    buildBluetoothScanningTile("Add New Device", "Scan")
-                  ],
-                );
+            NotificationsTile(
+              buildSection: buildSection,
+              buildListTile: buildListTile,
+              notificationsEnabled: notificationsEnabled,
+              onNotificationChanged: (value) async {
+                setState(() {
+                  notificationsEnabled = value;
+                });
+                await _updateProfile(notificationsEnabled: value);
               },
             ),
             const SizedBox(height: 20),
-            Consumer<BluetoothDeviceDataNotifier>(
-              builder: (context, bluetoothStore, child) {
-                return buildSection(
-                  title: 'Debug',
-                  children: [
-                    ...bluetoothStore.connectedDevices
-                        .map((device) => buildSimpleDataTile(device)),
-                    if (bluetoothStore.connectedDevices.isEmpty)
-                      buildReadOnlyTile("Status", "No devices connected"),
-
-                    // Einfacher Button
-                    if (bluetoothStore.connectedDevices.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          children: [
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () => _sendCommand(
-                                    bluetoothStore.connectedDevices.first, {
-                                  'DrinkReminderType': 0,
-                                }),
-                                child: const Text('None'),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () => _sendCommand(
-                                    bluetoothStore.connectedDevices.first, {
-                                  'DrinkReminderType': 1,
-                                }),
-                                child: const Text('Nomal'),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () => _sendCommand(
-                                    bluetoothStore.connectedDevices.first, {
-                                  'DrinkReminderType': 2,
-                                }),
-                                child: const Text('Important'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                );
-              },
+            ProfileTile(
+              buildSection: buildSection,
+              buildListTile: buildListTile,
+              buildReadOnlyTile: buildReadOnlyTile,
+              buildTiledContainer: buildTiledContainer,
+              username: username,
+              weight: weight,
+              height: height,
+              onUpdateValue: updateLocalState,
             ),
             const SizedBox(height: 20),
-            buildSection(title: 'Account', children: [buildLogoutTile()]),
+            DevicePairingTile(
+              buildSection: buildSection,
+              buildListTile: buildListTile,
+              buildReadOnlyTile: buildReadOnlyTile,
+              buildTiledContainer: buildTiledContainer,
+            ),
+            const SizedBox(height: 20),
+            const SizedBox(height: 20),
+            DebugTile(
+              buildSection: buildSection,
+              buildListTile: buildListTile,
+              buildReadOnlyTile: buildReadOnlyTile,
+            ),
+            const SizedBox(height: 20),
+            AccountTile(
+              buildSection: buildSection,
+              onLogoutSuccess: () {
+                if (mounted) Navigator.pushReplacementNamed(context, '/');
+              },
+            ),
           ],
         ),
       ),
@@ -221,48 +184,6 @@ class SettingsState extends State<Settings> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget buildSimpleDataTile(Device device) {
-    String displayValue = "No data";
-
-    if (device.lastData != null && device.lastData!.containsKey('amountMl')) {
-      displayValue = "${device.lastData!['amountMl']} ml";
-    } else if (device.lastData != null) {
-      displayValue = "Waiting...";
-    }
-
-    return buildListTile(
-      title: device.name,
-      trailing: Text(displayValue),
-    );
-  }
-
-  Widget buildProfileTile(
-      String title, double? currentValue, double min, double max, String unit) {
-    return buildListTile(
-      title: title,
-      trailing: currentValue != null
-          ? buildTiledContainer(
-              displayValue: "${currentValue.toStringAsFixed(2)} $unit",
-              onTap: () =>
-                  showTargetDialog(title, currentValue, min, max, unit),
-            )
-          : const Text("–"),
-    );
-  }
-
-  Widget buildWaterTargetTile() {
-    return buildListTile(
-      title: "Water Amount",
-      trailing: waterTarget != null
-          ? buildTiledContainer(
-              displayValue: '${waterTarget!.toStringAsFixed(1)}L',
-              onTap: () => showTargetDialog(
-                  "Set Daily Goal", waterTarget!, 0.0, 4.0, "Liter"),
-            )
-          : const Text("–"),
     );
   }
 
@@ -347,208 +268,6 @@ class SettingsState extends State<Settings> {
     );
   }
 
-  Widget buildNotificationToggle() {
-    return buildListTile(
-      title: "Notifications",
-      trailing: Switch(
-        value: notificationsEnabled ?? false,
-        onChanged: (value) async {
-          setState(() {
-            notificationsEnabled = value;
-          });
-          await _updateProfile(notificationsEnabled: value);
-        },
-        activeColor: const Color.fromARGB(255, 22, 135, 188),
-      ),
-    );
-  }
-
-  void showBluetoothScanDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          child: SizedBox(
-            height: 600,
-            width: double.maxFinite,
-            child: Column(
-              children: [
-                Expanded(child: ScanScreen()),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget buildBluetoothScanningTile(String title, String displayValue) {
-    return buildListTile(
-      title: title,
-      trailing: buildTiledContainer(
-        displayValue: displayValue,
-        onTap: () => showBluetoothScanDialog(),
-      ),
-    );
-  }
-
-  List<Widget> buildDevicesTiles(List<Device> devices) {
-    return devices
-        .where((device) => device.isConnected)
-        .map((device) => buildDeviceTile(device))
-        .toList();
-  }
-
-  Widget buildDeviceTile(Device device) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color.fromARGB(33, 22, 135, 188),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              device.icon,
-              color: const Color.fromARGB(255, 22, 135, 188),
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  device.name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Connected',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.green[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                showDisconnectDialog(device);
-              },
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                child: Icon(
-                  Icons.close,
-                  size: 20,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void showDisconnectDialog(Device device) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Disconnect Device'),
-          content:
-              Text('Are you sure you want to disconnect "${device.name}"?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                _performDisconnect(device.bluetoothDevice!);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text(
-                'Disconnect',
-                style:
-                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget buildLogoutTile() {
-    return ListTile(
-      leading: const Icon(Icons.logout, color: Colors.red),
-      title: const Text(
-        'Sign Out',
-        style: TextStyle(
-            fontSize: 16, color: Colors.red, fontWeight: FontWeight.w500),
-      ),
-      onTap: handleLogout,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    );
-  }
-
-  void handleLogout() {
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Sign Out'),
-          content: const Text('Are you sure you want to sign out?'),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                _performLogout();
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text(
-                'Sign Out',
-                style:
-                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _performLogout() async {
-    try {
-      await Supabase.instance.client.auth.signOut();
-      if (mounted) Navigator.pushReplacementNamed(context, '/');
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logout failed: $e')),
-        );
-      }
-    }
-  }
-
   Widget buildReadOnlyTile(String title, String? value) {
     return buildListTile(
       title: title,
@@ -565,30 +284,5 @@ class SettingsState extends State<Settings> {
         ),
       ),
     );
-  }
-
-  Future<void> _sendCommand(Device device, Map<String, dynamic> data) async {
-    final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
-    if (device.bluetoothDevice != null) {
-      await BleService(bluetoothStore)
-          .writeDataToDevice(device.bluetoothDevice!, data);
-    }
-  }
-
-  Future<void> _performDisconnect(BluetoothDevice device) async {
-    final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
-    try {
-      await device.disconnectAndUpdateStream();
-
-      BleService(bluetoothStore).removeConnectedDevice(device);
-      BleService(bluetoothStore).removeSavedDeviceData(device);
-
-      Snackbar.show(ABC.c,
-          "Disconnected from ${device.platformName.isNotEmpty ? device.platformName : device.remoteId.str}",
-          success: true);
-    } catch (e) {
-      Snackbar.show(ABC.b, prettyException("Disconnect Error:", e),
-          success: false);
-    }
   }
 }
