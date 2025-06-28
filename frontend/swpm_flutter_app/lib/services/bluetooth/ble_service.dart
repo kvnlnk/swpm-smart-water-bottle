@@ -6,18 +6,20 @@ import 'package:swpm_flutter_app/services/water_service.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 import 'package:swpm_flutter_app/services/bluetooth/ble_operations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:swpm_flutter_app/store/user_data.dart';
 
 /// Main BLE service for device management and data handling
 /// Handles device connections, monitoring, and water data processing
 class BleService {
   final BluetoothDeviceDataNotifier _store;
   final WaterService _waterService = WaterService();
+  final UserDataNotifier _userDataNotifier;
 
   // Timer for periodic fetches
   Timer? _periodicFetchTimer;
-  static const Duration _fetchInterval = Duration(minutes: 2);
+  static const Duration _fetchInterval = Duration(seconds: 10);
 
-  BleService(this._store) {
+  BleService(this._store, this._userDataNotifier) {
     // Store Listener hinzufügen um auf Connection Changes zu reagieren
     // Store listener to react to connection changes so we can start/stop periodic fetches
     _store.addListener(_onStoreChanged);
@@ -57,6 +59,13 @@ class BleService {
     if (!_store.hasConnectedDevices) {
       return;
     }
+
+    // Disable all notifications including drink reminders
+    if (_userDataNotifier.notificationsEnabled != true) {
+      BleOperations.writeDataToDevice(device, {'DrinkReminderType': 3});
+      return;
+    }
+
     try {
       final result = await _waterService.fetchLastDrinkingTime();
       if (result == null) {

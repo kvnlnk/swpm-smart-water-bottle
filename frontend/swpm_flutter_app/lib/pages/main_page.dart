@@ -5,6 +5,7 @@ import 'package:swpm_flutter_app/pages/statistics.dart';
 import 'package:swpm_flutter_app/pages/settings.dart';
 import 'package:swpm_flutter_app/services/bluetooth/ble_service.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
+import 'package:swpm_flutter_app/store/user_data.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -25,9 +26,11 @@ class MainPageState extends State<MainPage> {
 
   Future<void> _autoConnect() async {
     final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
+    final userStore = context.read<UserDataNotifier>();
+
     await Future.delayed(Duration(milliseconds: 500));
 
-    final bleService = BleService(bluetoothStore);
+    final bleService = BleService(bluetoothStore, userStore);
 
     // Auto reconnect if no other devices are connected
     if (bluetoothStore.connectedCount == 0) {
