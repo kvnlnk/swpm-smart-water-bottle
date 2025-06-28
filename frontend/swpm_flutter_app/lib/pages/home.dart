@@ -7,7 +7,7 @@ import 'package:swpm_flutter_app/services/water_service.dart';
 import '../components/water_bottle/water_bottle.dart';
 
 class Home extends StatefulWidget {
-  const Home({Key? key}) : super(key: key);
+  const Home({super.key});
 
   @override
   HomeState createState() => HomeState();
