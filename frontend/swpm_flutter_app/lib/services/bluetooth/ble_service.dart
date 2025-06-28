@@ -15,7 +15,7 @@ class BleService {
 
   // Timer for periodic fetches
   Timer? _periodicFetchTimer;
-  static const Duration _fetchInterval = Duration(seconds: 10);
+  static const Duration _fetchInterval = Duration(minutes: 1);
 
   BleService(this._store) {
     // Store Listener hinzufügen um auf Connection Changes zu reagieren
