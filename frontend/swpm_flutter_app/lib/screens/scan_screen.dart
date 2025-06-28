@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'package:swpm_flutter_app/services/bluetooth/bluetooth_device_extension.dart';
 import 'package:swpm_flutter_app/services/bluetooth/ble_service.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
-import 'package:swpm_flutter_app/store/user_data.dart';
 
 import '../utils/snackbar.dart';
 import '../widgets/scan_result_tile.dart';
@@ -90,11 +89,10 @@ class _ScanScreenState extends State<ScanScreen> {
 
   Future<void> onConnectPressed(BluetoothDevice device) async {
     final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
-    final userStore = context.read<UserDataNotifier>();
     try {
       await device.connectAndUpdateStream();
 
-      BleService(bluetoothStore, userStore).addConnectedDevice(device);
+      BleService(bluetoothStore).addConnectedDevice(device);
     } catch (e) {
       Snackbar.show(ABC.b, prettyException("Connect Error:", e),
           success: false);
@@ -103,11 +101,10 @@ class _ScanScreenState extends State<ScanScreen> {
 
   Future onRefresh() {
     final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
-    final userStore = context.read<UserDataNotifier>();
     if (_isScanning == false) {
       FlutterBluePlus.startScan(timeout: const Duration(seconds: 15));
     }
-    BleService(bluetoothStore, userStore).syncWithFlutterBluePlus();
+    BleService(bluetoothStore).syncWithFlutterBluePlus();
     if (mounted) {
       setState(() {});
     }

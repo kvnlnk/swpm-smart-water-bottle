@@ -569,21 +569,19 @@ class SettingsState extends State<Settings> {
 
   Future<void> _sendCommand(Device device, Map<String, dynamic> data) async {
     final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
-    final userStore = context.read<UserDataNotifier>();
     if (device.bluetoothDevice != null) {
-      await BleService(bluetoothStore, userStore)
+      await BleService(bluetoothStore)
           .writeDataToDevice(device.bluetoothDevice!, data);
     }
   }
 
   Future<void> _performDisconnect(BluetoothDevice device) async {
     final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
-    final userStore = context.read<UserDataNotifier>();
     try {
       await device.disconnectAndUpdateStream();
 
-      BleService(bluetoothStore, userStore).removeConnectedDevice(device);
-      BleService(bluetoothStore, userStore).removeSavedDeviceData(device);
+      BleService(bluetoothStore).removeConnectedDevice(device);
+      BleService(bluetoothStore).removeSavedDeviceData(device);
 
       Snackbar.show(ABC.c,
           "Disconnected from ${device.platformName.isNotEmpty ? device.platformName : device.remoteId.str}",
