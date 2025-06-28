@@ -6,6 +6,7 @@ import 'package:swpm_flutter_app/screens/scan_screen.dart';
 import 'package:swpm_flutter_app/services/bluetooth/ble_service.dart';
 import 'package:swpm_flutter_app/services/bluetooth/bluetooth_device_extension.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
+import 'package:swpm_flutter_app/store/user_data.dart';
 
 class DevicePairingTile extends StatelessWidget {
   final Widget Function({required String title, required List<Widget> children})
@@ -182,11 +183,12 @@ class DevicePairingTile extends StatelessWidget {
   Future<void> _performDisconnect(
       BuildContext context, BluetoothDevice device) async {
     final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
+    final userStore = context.read<UserDataNotifier>();
     try {
       await device.disconnectAndUpdateStream();
 
-      BleService(bluetoothStore).removeConnectedDevice(device);
-      BleService(bluetoothStore).removeSavedDeviceData(device);
+      BleService(bluetoothStore, userStore).removeConnectedDevice(device);
+      BleService(bluetoothStore, userStore).removeSavedDeviceData(device);
     } catch (_) {}
   }
 }

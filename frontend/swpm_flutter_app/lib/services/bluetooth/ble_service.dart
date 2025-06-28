@@ -6,21 +6,24 @@ import 'package:swpm_flutter_app/services/water_service.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 import 'package:swpm_flutter_app/services/bluetooth/ble_operations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:swpm_flutter_app/store/user_data.dart';
 
 /// Main BLE service for device management and data handling
 /// Handles device connections, monitoring, and water data processing
 class BleService {
   final BluetoothDeviceDataNotifier _store;
+  final UserDataNotifier _userStore;
   final WaterService _waterService = WaterService();
 
   // Timer for periodic fetches
   Timer? _periodicFetchTimer;
   static const Duration _fetchInterval = Duration(minutes: 1);
 
-  BleService(this._store) {
+  BleService(this._store, this._userStore) {
     // Store Listener hinzufügen um auf Connection Changes zu reagieren
     // Store listener to react to connection changes so we can start/stop periodic fetches
     _store.addListener(_onStoreChanged);
+    _userStore.addListener(_onNotificationPermissionChanged);
   }
 
   // Will only be called if store changes
@@ -32,6 +35,18 @@ class BleService {
     }
   }
 
+  void _onNotificationPermissionChanged() {
+    // Perform one fetch immediately if notifications are enabled to ensure data is up-to-date
+    if (_userStore.notificationsEnabled == true ||
+        _userStore.notificationsEnabled == false) {
+      for (var deviceData in _store.devices) {
+        if (deviceData.isConnected && deviceData.bluetoothDevice != null) {
+          _performFetch(deviceData.bluetoothDevice!);
+        }
+      }
+    }
+  }
+
   void _startPeriodicFetch() {
     if (_periodicFetchTimer?.isActive == true) {
       return;
@@ -40,7 +55,7 @@ class BleService {
     _periodicFetchTimer = Timer.periodic(_fetchInterval, (timer) {
       for (var deviceData in _store.devices) {
         if (deviceData.isConnected && deviceData.bluetoothDevice != null) {
-          _performPeriodicFetch(deviceData.bluetoothDevice!);
+          _performFetch(deviceData.bluetoothDevice!);
         }
       }
     });
@@ -53,7 +68,7 @@ class BleService {
     }
   }
 
-  Future<void> _performPeriodicFetch(BluetoothDevice device) async {
+  Future<void> _performFetch(BluetoothDevice device) async {
     if (!_store.hasConnectedDevices) {
       return;
     }
