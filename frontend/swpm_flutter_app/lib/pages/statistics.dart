@@ -6,7 +6,7 @@ import 'package:swpm_flutter_app/store/drinking_history_data.dart';
 import 'package:swpm_flutter_app/services/water_service.dart';
 
 class Statistics extends StatefulWidget {
-  const Statistics({Key? key}) : super(key: key);
+  const Statistics({super.key});
 
   @override
   State<Statistics> createState() => _StatisticsState();
@@ -29,7 +29,8 @@ class _StatisticsState extends State<Statistics> {
     final entries = await waterService.fetchDrinkingHistory();
     final summaryData = await waterService.fetchDailySummary();
 
-    Provider.of<DrinkingHistoryDataNotifier>(context, listen: false).setEntries(entries);
+    Provider.of<DrinkingHistoryDataNotifier>(context, listen: false)
+        .setEntries(entries);
     setState(() {
       summary = summaryData;
       isLoading = false;
@@ -50,9 +51,11 @@ class _StatisticsState extends State<Statistics> {
             const SizedBox(height: 20),
             _buildTopStats(data),
             const SizedBox(height: 20),
-            _buildSection(title: "Course of the day", child: _buildBarChart(data)),
+            _buildSection(
+                title: "Course of the day", child: _buildBarChart(data)),
             const SizedBox(height: 20),
-            _buildSection(title: "Individual entries", child: _buildDetailList(data)),
+            _buildSection(
+                title: "Individual entries", child: _buildDetailList(data)),
           ],
         ),
       ),
@@ -76,7 +79,6 @@ class _StatisticsState extends State<Statistics> {
       ],
     );
   }
-
 
   Widget _buildTopBox({required String title, required String subtitle}) {
     return Expanded(
@@ -133,7 +135,10 @@ class _StatisticsState extends State<Statistics> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
-              style: TextStyle(fontSize: 16, color: Colors.grey[700], fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           child,
         ],
@@ -155,8 +160,10 @@ class _StatisticsState extends State<Statistics> {
     if (hourlyMl.values.isEmpty) {
       maxAmount = 1000; // Default fallback value if no data is available
     } else {
-      final maxEntry = hourlyMl.values.reduce((a, b) => a > b ? a : b); // Find the highest hourly value
-      maxAmount = (maxEntry * 1.2).ceil(); // Add 20% padding and round up for UX
+      final maxEntry = hourlyMl.values
+          .reduce((a, b) => a > b ? a : b); // Find the highest hourly value
+      maxAmount =
+          (maxEntry * 1.2).ceil(); // Add 20% padding and round up for UX
     }
 
     final yAxisSteps = 4;
@@ -207,7 +214,9 @@ class _StatisticsState extends State<Statistics> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text('$hour h', style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+                        Text('$hour h',
+                            style: TextStyle(
+                                fontSize: 10, color: Colors.grey[600])),
                       ],
                     ),
                   );

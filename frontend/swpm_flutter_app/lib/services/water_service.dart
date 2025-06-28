@@ -37,6 +37,29 @@ class WaterService {
     );
   }
 
+  Future<Map<String, dynamic>?> fetchLastDrinkingTime() async {
+    final jwt = _client.auth.currentSession?.accessToken;
+    if (jwt == null) return null;
+
+    final url = Uri.parse('$_baseUrl/api/water/last-drinking-time');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $jwt',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        final drinkReminderType = jsonData['drinkReminderType'];
+        return {'DrinkReminderType': drinkReminderType};
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<List<DrinkingEntry>> fetchDrinkingHistory() async {
     final jwt = _client.auth.currentSession?.accessToken;
     if (jwt == null) return [];
@@ -61,11 +84,11 @@ class WaterService {
     return [];
   }
 
-  Future<void> addDrink(int amountMl) async {
+  Future<void> addDrink(int amountMl, String timestamp) async {
     final jwt = _client.auth.currentSession?.accessToken;
     if (jwt == null) return;
 
-    final url = Uri.parse('$_baseUrl/api/water/drink');
+    final url = Uri.parse('$_baseUrl/api/water/log-drinking');
 
     try {
       await http.post(
@@ -74,7 +97,7 @@ class WaterService {
           'Authorization': 'Bearer $jwt',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({'amountMl': amountMl}),
+        body: jsonEncode({'amountMl': amountMl, 'timestamp': timestamp}),
       );
     } catch (_) {}
   }

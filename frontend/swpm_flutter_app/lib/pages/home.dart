@@ -7,7 +7,7 @@ import 'package:swpm_flutter_app/services/water_service.dart';
 import '../components/water_bottle/water_bottle.dart';
 
 class Home extends StatefulWidget {
-  const Home({Key? key}) : super(key: key);
+  const Home({super.key});
 
   @override
   HomeState createState() => HomeState();
@@ -57,7 +57,8 @@ class HomeState extends State<Home> {
     }
 
     final percentage = waterData.percentageAchieved;
-    final waterLevel = dailyGoal > 0 ? (consumed / dailyGoal).clamp(0.0, 1.0) : 0.0;
+    final waterLevel =
+        dailyGoal > 0 ? (consumed / dailyGoal).clamp(0.0, 1.0) : 0.0;
 
     final bool goalReached = percentage >= 100;
 
@@ -124,7 +125,6 @@ class HomeState extends State<Home> {
           ],
         ),
         centerTitle: true,
-        backgroundColor: Colors.white,
       ),
       body: RefreshIndicator(
         onRefresh: _loadWaterData,

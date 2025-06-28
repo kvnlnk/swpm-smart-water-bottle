@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'package:swpm_flutter_app/pages/main_page.dart';
 import 'package:swpm_flutter_app/pages/sign_in.dart';
+import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 
 import 'package:swpm_flutter_app/store/user_data.dart';
 import 'package:swpm_flutter_app/store/water_data.dart';
@@ -23,6 +24,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => UserDataNotifier()),
         ChangeNotifierProvider(create: (_) => WaterDataNotifier()),
         ChangeNotifierProvider(create: (_) => DrinkingHistoryDataNotifier()),
+        ChangeNotifierProvider(create: (_) => BluetoothDeviceDataNotifier()),
       ],
       child: const MyApp(),
     ),
@@ -32,7 +34,7 @@ Future<void> main() async {
 final supabase = Supabase.instance.client;
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {

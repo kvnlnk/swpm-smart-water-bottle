@@ -5,7 +5,7 @@ import 'package:supabase_auth_ui/supabase_auth_ui.dart';
 import '../constants.dart';
 
 class SignIn extends StatelessWidget {
-  const SignIn({Key? key}) : super(key: key);
+  const SignIn({super.key});
   @override
   Widget build(BuildContext context) {
     void navigateHome(AuthResponse response) {
@@ -46,13 +46,11 @@ class SignIn extends StatelessWidget {
                   Theme(
                     data: buttonTheme,
                     child: SupaEmailAuth(
-                      redirectTo: kIsWeb
-                          ? null
-                          : 'smart-water-bottle://login-callback',
+                      redirectTo:
+                          kIsWeb ? null : 'smart-water-bottle://login-callback',
                       onSignInComplete: navigateHome,
                       onSignUpComplete: navigateSignIn,
                       showConfirmPasswordField: true,
-
                       metadataFields: [
                         MetaDataField(
                           prefixIcon: const Icon(Icons.person),
@@ -71,9 +69,8 @@ class SignIn extends StatelessWidget {
                   spacer,
                   SupaSocialsAuth(
                     colored: true,
-                    redirectUrl: kIsWeb
-                        ? null
-                        : 'smart-water-bottle://login-callback',
+                    redirectUrl:
+                        kIsWeb ? null : 'smart-water-bottle://login-callback',
                     enableNativeAppleAuth: false,
                     socialProviders: [OAuthProvider.github],
                     onSuccess: (session) {

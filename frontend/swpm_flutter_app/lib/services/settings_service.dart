@@ -40,7 +40,8 @@ class SettingsService {
         if (weight != null) 'WeightKg': weight.round(),
         if (height != null) 'HeightCm': height.round(),
         if (waterTarget != null) 'DailyGoalMl': (waterTarget * 1000).round(),
-        if (notificationsEnabled != null) 'NotificationsEnabled': notificationsEnabled,
+        if (notificationsEnabled != null)
+          'NotificationsEnabled': notificationsEnabled,
       };
 
       final response = await http.patch(

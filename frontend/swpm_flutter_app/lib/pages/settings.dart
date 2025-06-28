@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:swpm_flutter_app/widgets/setting_tiles/account_tile.dart';
+import 'package:swpm_flutter_app/widgets/setting_tiles/daily_goal_tile.dart';
+import 'package:swpm_flutter_app/widgets/setting_tiles/debug_tile.dart';
+import 'package:swpm_flutter_app/widgets/setting_tiles/device_paring_tile.dart';
+import 'package:swpm_flutter_app/widgets/setting_tiles/notifications_tile.dart';
+import 'package:swpm_flutter_app/widgets/setting_tiles/profile_tile.dart';
 import 'package:swpm_flutter_app/store/user_data.dart';
 import 'package:swpm_flutter_app/services/settings_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 
 class Settings extends StatefulWidget {
-  const Settings({Key? key}) : super(key: key);
+  const Settings({super.key});
 
   @override
   SettingsState createState() => SettingsState();
@@ -34,7 +38,8 @@ class SettingsState extends State<Settings> {
 
     setState(() {
       username = data['username'];
-      waterTarget = (data['dailyGoalMl'] != null) ? data['dailyGoalMl'] / 1000.0 : null;
+      waterTarget =
+          (data['dailyGoalMl'] != null) ? data['dailyGoalMl'] / 1000.0 : null;
       notificationsEnabled = data['notificationsEnabled'];
       weight = (data['weightKg'] as num?)?.toDouble();
       height = (data['heightCm'] as num?)?.toDouble();
@@ -57,7 +62,9 @@ class SettingsState extends State<Settings> {
     );
 
     if (success) {
-      if (notificationsEnabled != null) store.updateNotifications(notificationsEnabled);
+      if (notificationsEnabled != null) {
+        store.updateNotifications(notificationsEnabled);
+      }
       if (waterTarget != null) store.updateDailyGoal(waterTarget);
     }
   }
@@ -84,20 +91,57 @@ class SettingsState extends State<Settings> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            buildSection(title: 'Daily Goal', children: [buildWaterTargetTile()]),
-            const SizedBox(height: 20),
-            buildSection(title: 'Notifications', children: [buildNotificationToggle()]),
-            const SizedBox(height: 20),
-            buildSection(
-              title: 'Profile',
-              children: [
-                buildReadOnlyTile("Username", username),
-                buildProfileTile("Weight", weight, 0.0, 125.0, "kg"),
-                buildProfileTile("Height", height, 0.0, 200.0, "cm"),
-              ],
+            DailyGoalTile(
+              buildSection: buildSection,
+              buildListTile: buildListTile,
+              buildTiledContainer: buildTiledContainer,
+              waterTarget: waterTarget,
+              onUpdateValue: updateLocalState,
             ),
             const SizedBox(height: 20),
-            buildSection(title: 'Account', children: [buildLogoutTile()]),
+            NotificationsTile(
+              buildSection: buildSection,
+              buildListTile: buildListTile,
+              notificationsEnabled: notificationsEnabled,
+              onNotificationChanged: (value) async {
+                setState(() {
+                  notificationsEnabled = value;
+                });
+                await _updateProfile(notificationsEnabled: value);
+              },
+            ),
+            const SizedBox(height: 20),
+            ProfileTile(
+              buildSection: buildSection,
+              buildListTile: buildListTile,
+              buildReadOnlyTile: buildReadOnlyTile,
+              buildTiledContainer: buildTiledContainer,
+              username: username,
+              weight: weight,
+              height: height,
+              onUpdateValue: updateLocalState,
+            ),
+            const SizedBox(height: 20),
+            DevicePairingTile(
+              buildSection: buildSection,
+              buildListTile: buildListTile,
+              buildReadOnlyTile: buildReadOnlyTile,
+              buildTiledContainer: buildTiledContainer,
+            ),
+            const SizedBox(height: 20),
+            const SizedBox(height: 20),
+            DebugTile(
+              buildSection: buildSection,
+              buildListTile: buildListTile,
+              buildReadOnlyTile: buildReadOnlyTile,
+            ),
+            const SizedBox(height: 20),
+            AccountTile(
+              buildSection: buildSection,
+              onLogoutSuccess: () {
+                if (mounted) Navigator.pushReplacementNamed(context, '/');
+              },
+            ),
           ],
         ),
       ),
@@ -110,7 +154,10 @@ class SettingsState extends State<Settings> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: const [
-          BoxShadow(color: Color.fromARGB(29, 0, 0, 0), blurRadius: 10, offset: Offset(0, 2)),
+          BoxShadow(
+              color: Color.fromARGB(29, 0, 0, 0),
+              blurRadius: 10,
+              offset: Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -120,11 +167,14 @@ class SettingsState extends State<Settings> {
             padding: const EdgeInsets.all(16),
             child: Text(
               title,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[700]),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[700]),
             ),
           ),
           ...children.map(
-                (child) => Column(
+            (child) => Column(
               children: [
                 child,
                 if (children.indexOf(child) < children.length - 1)
@@ -137,30 +187,6 @@ class SettingsState extends State<Settings> {
     );
   }
 
-  Widget buildProfileTile(String title, double? currentValue, double min, double max, String unit) {
-    return buildListTile(
-      title: title,
-      trailing: currentValue != null
-          ? buildTiledContainer(
-        displayValue: "${currentValue.toStringAsFixed(2)} $unit",
-        onTap: () => showTargetDialog(title, currentValue, min, max, unit),
-      )
-          : const Text("–"),
-    );
-  }
-
-  Widget buildWaterTargetTile() {
-    return buildListTile(
-      title: "Water Amount",
-      trailing: waterTarget != null
-          ? buildTiledContainer(
-        displayValue: '${waterTarget!.toStringAsFixed(1)}L',
-        onTap: () => showTargetDialog("Set Daily Goal", waterTarget!, 0.0, 4.0, "Liter"),
-      )
-          : const Text("–"),
-    );
-  }
-
   Widget buildTiledContainer({
     required String displayValue,
     required VoidCallback onTap,
@@ -170,7 +196,8 @@ class SettingsState extends State<Settings> {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(
+            color: background, borderRadius: BorderRadius.circular(20)),
         child: Text(
           displayValue,
           style: const TextStyle(
@@ -190,7 +217,8 @@ class SettingsState extends State<Settings> {
     );
   }
 
-  void showTargetDialog(String title, double currentValue, double min, double max, String unit) {
+  void showTargetDialog(
+      String title, double currentValue, double min, double max, String unit) {
     showDialog(
       context: context,
       builder: (context) {
@@ -216,14 +244,17 @@ class SettingsState extends State<Settings> {
                     min: min,
                     max: max,
                     divisions: 40,
-                    onChanged: (value) => setDialogState(() => tempValue = value),
+                    onChanged: (value) =>
+                        setDialogState(() => tempValue = value),
                   ),
                 ],
               );
             },
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () async {
                 updateLocalState(title, tempValue);
@@ -237,73 +268,6 @@ class SettingsState extends State<Settings> {
     );
   }
 
-  Widget buildNotificationToggle() {
-    return buildListTile(
-      title: "Notifications",
-      trailing: Switch(
-        value: notificationsEnabled ?? false,
-        onChanged: (value) async {
-          setState(() {
-            notificationsEnabled = value;
-          });
-          await _updateProfile(notificationsEnabled: value);
-        },
-        activeColor: const Color.fromARGB(255, 22, 135, 188),
-      ),
-    );
-  }
-
-  Widget buildLogoutTile() {
-    return ListTile(
-      leading: const Icon(Icons.logout, color: Colors.red),
-      title: const Text(
-        'Sign Out',
-        style: TextStyle(fontSize: 16, color: Colors.red, fontWeight: FontWeight.w500),
-      ),
-      onTap: handleLogout,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    );
-  }
-
-  void handleLogout() {
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Sign Out'),
-          content: const Text('Are you sure you want to sign out?'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                _performLogout();
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text(
-                'Sign Out',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _performLogout() async {
-    try {
-      await Supabase.instance.client.auth.signOut();
-      if (mounted) Navigator.pushReplacementNamed(context, '/');
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logout failed: $e')),
-        );
-      }
-    }
-  }
-
   Widget buildReadOnlyTile(String title, String? value) {
     return buildListTile(
       title: title,
@@ -315,7 +279,8 @@ class SettingsState extends State<Settings> {
         ),
         child: Text(
           value ?? '–',
-          style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.bold),
+          style:
+              TextStyle(color: Colors.grey[600], fontWeight: FontWeight.bold),
         ),
       ),
     );
