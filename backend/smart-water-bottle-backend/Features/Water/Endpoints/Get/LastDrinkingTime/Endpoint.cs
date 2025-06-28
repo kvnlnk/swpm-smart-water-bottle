@@ -43,7 +43,12 @@ public class Endpoint : EndpointWithoutRequest<Response>
             .Limit(1)
             .Get(cancellationToken: ct);
         
-        if (lastDrink.Model != null)
+        var user = await _supabase
+            .From<Entities.User>()
+            .Where(x => x.Id == userId)
+            .Single(ct);
+        
+        if (lastDrink.Model != null && user != null)
         {
             _logger.LogInformation("Retrieved users last drinking time: {lastDrink}",  lastDrink.Model.CreatedAt);
             var response = new Response();
@@ -52,24 +57,31 @@ public class Endpoint : EndpointWithoutRequest<Response>
             
             response.LastDrinkingTime = lastDrinkTime;
             response.MinutesSinceLastDrink = minutesSince;
-            
 
-            switch (minutesSince)
+            if (user.NotificationsEnabled)
             {
-                case >= ImportantReminderIntervalMinutes:
-                    response.DrinkReminderType = DrinkReminderType.Important;
-                    response.ShouldSendReminder = true;
-                    break;
-                case >= NormalReminderIntervalMinutes:
-                    response.DrinkReminderType = DrinkReminderType.Normal;
-                    response.ShouldSendReminder = true;
-                    break;
-                default:
-                    response.DrinkReminderType = DrinkReminderType.None;
-                    response.ShouldSendReminder = false;
-                    break;
+                switch (minutesSince)
+                {
+                    case >= ImportantReminderIntervalMinutes:
+                        response.DrinkReminderType = DrinkReminderType.Important;
+                        response.ShouldSendReminder = true;
+                        break;
+                    case >= NormalReminderIntervalMinutes:
+                        response.DrinkReminderType = DrinkReminderType.Normal;
+                        response.ShouldSendReminder = true;
+                        break;
+                    default:
+                        response.DrinkReminderType = DrinkReminderType.None;
+                        response.ShouldSendReminder = false;
+                        break;
+                }
             }
-            
+            else
+            {
+                response.DrinkReminderType = DrinkReminderType.Off;
+                response.ShouldSendReminder = false;
+            }
+
             await SendOkAsync(response, ct);
         }
         else

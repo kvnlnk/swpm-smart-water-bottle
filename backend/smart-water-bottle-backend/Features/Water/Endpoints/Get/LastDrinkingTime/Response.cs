@@ -2,7 +2,7 @@
 
 public enum DrinkReminderType
 {
-    None, Normal, Important
+    None, Normal, Important, Off
 }
 
 
