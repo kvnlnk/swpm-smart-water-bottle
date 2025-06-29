@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:swpm_flutter_app/widgets/setting_tiles/account_tile.dart';
 import 'package:swpm_flutter_app/widgets/setting_tiles/daily_goal_tile.dart';
 import 'package:swpm_flutter_app/widgets/setting_tiles/debug_tile.dart';
-import 'package:swpm_flutter_app/widgets/setting_tiles/device_paring_tile.dart';
+import 'package:swpm_flutter_app/widgets/setting_tiles/device_pairing_tile.dart';
 import 'package:swpm_flutter_app/widgets/setting_tiles/notifications_tile.dart';
 import 'package:swpm_flutter_app/widgets/setting_tiles/profile_tile.dart';
 import 'package:swpm_flutter_app/store/user_data.dart';
