@@ -4,17 +4,26 @@
 #include <BLE2902.h>
 #include <ArduinoJson.h>
 #include <ESP32Time.h>
-
-#include <Arduino.h>
+#include <TFT_eSPI.h>
 
 volatile int pulseCount = 0;
-const byte flowPin = 21;
+const byte flowPin = 19;
 const byte buttonPin = 17;
-const byte ledNone = 2;
-const byte ledNormal = 4;
-const byte ledImportant = 16;
+const byte ledNone = 14;
+const byte ledNormal = 12;
+const byte ledImportant = 13;
 
+float sessionVolumeMl = 0.0;
+int noWaterCounter = 0; 
 int fuellrichtung = 1;
+
+bool isConnected = false;
+bool isSynched = false;
+unsigned long lastSyncAttempt = 0;
+const unsigned long syncInterval = 2000;
+
+unsigned long messageDisplayStart = 0;
+bool showReminderMessage = false;
 
 ESP32Time rtc(0);  
 
@@ -28,7 +37,16 @@ void IRAM_ATTR pulseCounter() {
   pulseCount++;
 }
 
+// Create tft object
+TFT_eSPI tft = TFT_eSPI();       // Create object "tft"
 
+const int SCREEN_COLOR = TFT_BLACK;
+const int TEXT_COLOR = TFT_WHITE;
+
+unsigned long displayStart = millis();
+unsigned long displayDuration = 5000; // 5 Sekunden anzeigen
+
+bool showMessage;
 
 // // Klasse, welche BLE Callback für empfangene Daten betreibt
 class MyCallbacks : public BLECharacteristicCallbacks {
@@ -48,9 +66,41 @@ class MyCallbacks : public BLECharacteristicCallbacks {
       return;
     }
 
-    if (!doc.containsKey("DrinkReminderTyp")) return;
+    if (doc["syncConfirmed"] == true && doc.containsKey("timestamp")) {
+      String timestamp = doc["timestamp"];
 
-    int typ = doc["DrinkReminderTyp"];
+      struct tm timeinfo;
+      if (sscanf(timestamp.c_str(), "%4d-%2d-%2dT%2d:%2d:%2d",
+                &timeinfo.tm_year, &timeinfo.tm_mon, &timeinfo.tm_mday,
+                &timeinfo.tm_hour, &timeinfo.tm_min, &timeinfo.tm_sec) == 6) {
+
+        timeinfo.tm_year -= 1900;  // struct tm erwartet Jahre seit 1900
+        timeinfo.tm_mon -= 1;      // struct tm: 0 = Jan
+
+        time_t epochTime = mktime(&timeinfo);  
+        rtc.setTime(epochTime);
+
+        isSynched = true;
+        Serial.println("Synchronisation erfolgreich.");
+      } else {
+        Serial.println("Fehler beim Parsen des Zeitstempels.");
+      }
+      return;
+    }
+
+    tft.fillScreen(SCREEN_COLOR);
+    tft.setTextColor(TEXT_COLOR);
+    tft.setTextSize(2);
+
+    int typ = doc["DrinkReminderType"];
+    int waterGoal = doc["waterGoal"];
+    int currentWater = doc["currentWater"];
+    
+    tft.setCursor(10, 60);
+    tft.printf("Getrunken: %.2f L", currentWater/ 1000.0);
+    
+    tft.setCursor(10, 80);
+    tft.printf("Ziel:      %.2f L", waterGoal/ 1000.0);
 
     // Alle LEDs ausschalten
     digitalWrite(ledNone, LOW);
@@ -60,19 +110,37 @@ class MyCallbacks : public BLECharacteristicCallbacks {
     // LED je nach Typ setzen
     switch (typ) {
       case 0:
+        tft.setCursor(35,150);
         digitalWrite(ledNone, HIGH);
+        tft.setTextColor(TFT_GREEN);
+        tft.println("Ziel erreicht!");
         break;
       case 1:
+        tft.setCursor(35,150);  
         digitalWrite(ledNormal, HIGH);
+        tft.setTextColor(TFT_YELLOW);
+        tft.println("Trink etwas!");
         break;
       case 2:
+        tft.setCursor(35,150);
         digitalWrite(ledImportant, HIGH);
+        tft.setTextColor(TFT_RED);
+        tft.println("Jetzt trinken!");
+        break;
+      case 3:
         break;
       default:
-        Serial.println("Unbekannter DrinkReminderTyp");
+        tft.setCursor(0,50);
+        tft.setTextColor(TFT_WHITE);
+        tft.println("Hinweis unbekannt");
+        Serial.println("Unbekannter DrinkReminderType");
         break;
     }
     
+    // Nachricht sichtbar machen und Zeit merken
+    showReminderMessage = true;
+    messageDisplayStart = millis();
+
     Serial.print("Empfangenes JSON: ");
     Serial.println(input);
   }
@@ -82,18 +150,28 @@ class MyCallbacks : public BLECharacteristicCallbacks {
 class MyServerCallbacks : public BLEServerCallbacks{
     void onConnect(BLEServer* pServer){
     Serial.println("Mit Client verbunden");
+    isConnected = true;
+    isSynched = true;
+    lastSyncAttempt = 0;
   }
   // Advertising bei Disconnect
   void onDisconnect(BLEServer* pServer){
     Serial.println("Client getrennt, starte Advertising");
     delay(500); //Sicherheitsdelay
+    isConnected = false;
+    isSynched = false;
     BLEDevice::startAdvertising();
   }
 };
 
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
+
+  tft.init();
+  tft.setRotation(0);
+  tft.fillScreen(SCREEN_COLOR);
+  tft.setTextColor(TEXT_COLOR);
 
   rtc.setTime(0, 35, 14, 26, 6, 2025); // 26.06.2025 14:35:00
   pinMode(flowPin, INPUT_PULLUP);
@@ -125,15 +203,29 @@ void setup() {
 }
 
 void loop() {
-  // Druecken des Buttons soll die Fließrichtung aendern
-  // Bei 1 wird der Wert per Bluetooth geschickt, bei Null nicht
-  static int lastButtonState = 0;
-  int currentButton = digitalRead(buttonPin);
 
-  if (currentButton == HIGH && lastButtonState == LOW) {
-    fuellrichtung = 1 - fuellrichtung;
+  if (showReminderMessage && millis() - messageDisplayStart >= 5000) {
+    tft.fillScreen(SCREEN_COLOR);  // Bereich der Nachricht löschen
+    digitalWrite(ledNone, LOW);
+    digitalWrite(ledNormal, LOW);
+    digitalWrite(ledImportant, LOW);
+    showReminderMessage = false;
   }
-  lastButtonState = currentButton;
+
+  if (isConnected && !isSynched) {
+    if (millis() - lastSyncAttempt >= syncInterval) {
+      StaticJsonDocument<64> syncMsg;
+      syncMsg["syncRequest"] = true;
+      String syncOut;
+      serializeJson(syncMsg, syncOut);
+      pCharacteristic->setValue(syncOut.c_str());
+      pCharacteristic->notify();
+      Serial.println("SyncRequest gesendet: " + syncOut);
+      lastSyncAttempt = millis();
+    }
+    delay(100);
+    return;
+  }
 
   noInterrupts();
   int countedPulses = pulseCount;
@@ -146,19 +238,29 @@ void loop() {
   float volumePerSecond = flowRate / 60.0;
   float volumeMl = volumePerSecond * 1000.0;
 
-  if (fuellrichtung == 1 && volumeMl != 0) {
+  if (fuellrichtung == 1 ) {
+    if (volumeMl > 0){
+        sessionVolumeMl += volumeMl;
+        noWaterCounter = 0;
+    } else{
+      noWaterCounter++;
+    }
     //BLE senden
-    StaticJsonDocument<64> doc;
-    doc["amountMl"] = volumeMl;
-    doc["timestamp"] = rtc.getTime("%Y-%m-%dT%H:%M:%S.000Z");
+    if (noWaterCounter >= 3 && sessionVolumeMl > 0 && isConnected && isSynched ) {
+      StaticJsonDocument<64> doc;
+      doc["amountMl"] = sessionVolumeMl;
+      doc["timestamp"] = rtc.getTime("%Y-%m-%dT%H:%M:%S.000Z");
 
-    String output;
-    serializeJson(doc, output);
+      String output;
+      serializeJson(doc, output);
 
-    pCharacteristic->setValue(output.c_str());
-    pCharacteristic->notify();
+      pCharacteristic->setValue(output.c_str());
+      pCharacteristic->notify();
 
-    Serial.print("Gesendet: ");
-    Serial.println(output);
+      Serial.print("Gesendet: ");
+      Serial.println(output);
+
+      sessionVolumeMl = 0;
+    }
   }
 }
