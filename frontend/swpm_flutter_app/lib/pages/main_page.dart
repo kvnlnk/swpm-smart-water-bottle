@@ -6,6 +6,7 @@ import 'package:swpm_flutter_app/pages/settings.dart';
 import 'package:swpm_flutter_app/services/bluetooth/ble_service.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 import 'package:swpm_flutter_app/store/user_data.dart';
+import 'package:swpm_flutter_app/store/water_data.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -20,38 +21,15 @@ class MainPageState extends State<MainPage> {
   final GlobalKey<SettingsState> settingsKey = GlobalKey<SettingsState>();
 
   late PageController _pageController;
-  BluetoothDeviceDataNotifier? _bluetoothStore;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
 
-    // Automatically connect to the saved device after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _autoConnect();
-      _setupBluetoothListener();
     });
-  }
-
-  @override
-  void dispose() {
-    // Remove listener when disposing
-    _bluetoothStore?.removeListener(_onBluetoothDataChanged);
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  void _setupBluetoothListener() {
-    _bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
-    _bluetoothStore?.addListener(_onBluetoothDataChanged);
-  }
-
-  void _onBluetoothDataChanged() {
-    // Automatically refresh current page when new BLE data arrives
-    if (mounted) {
-      _refreshCurrentPage();
-    }
   }
 
   void _refreshCurrentPage() {
@@ -164,5 +142,11 @@ class MainPageState extends State<MainPage> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 }
