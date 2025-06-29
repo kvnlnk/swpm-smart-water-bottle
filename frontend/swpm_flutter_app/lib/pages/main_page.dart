@@ -20,17 +20,52 @@ class MainPageState extends State<MainPage> {
   final GlobalKey<SettingsState> settingsKey = GlobalKey<SettingsState>();
 
   late PageController _pageController;
+  BluetoothDeviceDataNotifier? _bluetoothStore;
 
   @override
   void initState() {
     super.initState();
-
     _pageController = PageController();
 
     // Automatically connect to the saved device after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _autoConnect();
+      _setupBluetoothListener();
     });
+  }
+
+  @override
+  void dispose() {
+    // Remove listener when disposing
+    _bluetoothStore?.removeListener(_onBluetoothDataChanged);
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _setupBluetoothListener() {
+    _bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
+    _bluetoothStore?.addListener(_onBluetoothDataChanged);
+  }
+
+  void _onBluetoothDataChanged() {
+    // Automatically refresh current page when new BLE data arrives
+    if (mounted) {
+      _refreshCurrentPage();
+    }
+  }
+
+  void _refreshCurrentPage() {
+    switch (currentPage) {
+      case 0:
+        homeKey.currentState?.refresh();
+        break;
+      case 1:
+        statisticsKey.currentState?.refresh();
+        break;
+      case 2:
+        settingsKey.currentState?.refresh();
+        break;
+    }
   }
 
   Future<void> _autoConnect() async {
@@ -44,7 +79,6 @@ class MainPageState extends State<MainPage> {
     // Auto reconnect if no other devices are connected
     if (bluetoothStore.connectedCount == 0) {
       final success = await bleService.autoConnectToSavedDevice();
-
       if (success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -93,17 +127,8 @@ class MainPageState extends State<MainPage> {
       currentPage = value;
     });
 
-    switch (value) {
-      case 0:
-        homeKey.currentState?.refresh();
-        break;
-      case 1:
-        statisticsKey.currentState?.refresh();
-        break;
-      case 2:
-        settingsKey.currentState?.refresh();
-        break;
-    }
+    // Manual refresh when changing pages
+    _refreshCurrentPage();
   }
 
   @override
