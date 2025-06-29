@@ -6,6 +6,7 @@ import 'package:swpm_flutter_app/pages/settings.dart';
 import 'package:swpm_flutter_app/services/bluetooth/ble_service.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 import 'package:swpm_flutter_app/store/user_data.dart';
+import 'package:swpm_flutter_app/utils/ui_refresher.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -28,6 +29,7 @@ class MainPageState extends State<MainPage> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _autoConnect();
+      _setupUIRefreshListener();
     });
   }
 
@@ -43,6 +45,18 @@ class MainPageState extends State<MainPage> {
         settingsKey.currentState?.refresh();
         break;
     }
+  }
+
+  void _setupUIRefreshListener() {
+    UIRefreshNotifier.instance.addListener(() {
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _refreshCurrentPage();
+          }
+        });
+      }
+    });
   }
 
   Future<void> _autoConnect() async {
@@ -146,6 +160,7 @@ class MainPageState extends State<MainPage> {
   @override
   void dispose() {
     _pageController.dispose();
+    UIRefreshNotifier.instance.removeListener(() {});
     super.dispose();
   }
 }
