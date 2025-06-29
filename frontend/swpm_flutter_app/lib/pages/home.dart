@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:swpm_flutter_app/store/user_data.dart';
 import 'package:swpm_flutter_app/store/water_data.dart';
@@ -21,6 +22,10 @@ class HomeState extends State<Home> {
   void initState() {
     super.initState();
     _loadWaterData();
+  }
+
+  Future<void> refresh() async {
+    await _loadWaterData();
   }
 
   Future<void> _loadWaterData() async {
@@ -76,6 +81,8 @@ class HomeState extends State<Home> {
     );
 
     final waterDisplay = Container(
+      height: 160,
+      width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -83,34 +90,41 @@ class HomeState extends State<Home> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            "${consumed.toStringAsFixed(2)}L",
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: goalReached ? Colors.green : Colors.black87,
+      child: isLoading
+          ? Center(
+              child: LoadingAnimationWidget.staggeredDotsWave(
+                color: Colors.blue,
+                size: 48,
+              ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  "${consumed.toStringAsFixed(2)}L",
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: goalReached ? Colors.green : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "of your ${dailyGoal.toStringAsFixed(2)}L daily goal",
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "Achieved: $percentage%",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: goalReached ? Colors.green : Colors.black,
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            "of your ${dailyGoal.toStringAsFixed(2)}L daily goal",
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "Achieved: $percentage%",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: goalReached ? Colors.green : Colors.black,
-            ),
-          ),
-        ],
-      ),
     );
 
     return Scaffold(

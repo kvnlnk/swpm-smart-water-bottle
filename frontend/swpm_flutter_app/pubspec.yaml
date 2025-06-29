@@ -43,6 +43,7 @@ dependencies:
   flutter_blue_plus: ^1.32.7
   permission_handler: ^11.3.1
   shared_preferences: ^2.5.3
+  loading_animation_widget:
   
 
 dev_dependencies:

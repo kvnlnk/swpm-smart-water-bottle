@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
@@ -9,10 +10,10 @@ class Statistics extends StatefulWidget {
   const Statistics({super.key});
 
   @override
-  State<Statistics> createState() => _StatisticsState();
+  State<Statistics> createState() => StatisticsState();
 }
 
-class _StatisticsState extends State<Statistics> {
+class StatisticsState extends State<Statistics> {
   final WaterService waterService = WaterService();
   bool isLoading = true;
   WaterSummary? summary;
@@ -21,6 +22,10 @@ class _StatisticsState extends State<Statistics> {
   void initState() {
     super.initState();
     _fetchDrinkingData();
+  }
+
+  Future<void> refresh() async {
+    await _fetchDrinkingData();
   }
 
   Future<void> _fetchDrinkingData() async {
@@ -71,19 +76,28 @@ class _StatisticsState extends State<Statistics> {
           subtitle: summary?.drinkCount == 1
               ? 'drinking session'
               : 'drinking sessions',
+          left: true,
+          isLoading: isLoading,
         ),
         _buildTopBox(
           title: '${data.averagePerDay.toStringAsFixed(1)}L',
           subtitle: 'consumed',
+          isLoading: isLoading,
         ),
       ],
     );
   }
 
-  Widget _buildTopBox({required String title, required String subtitle}) {
+  Widget _buildTopBox(
+      {required String title,
+      required String subtitle,
+      bool left = false,
+      bool isLoading = false}) {
     return Expanded(
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8),
+        margin: left
+            ? const EdgeInsets.only(right: 8)
+            : const EdgeInsets.only(left: 8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -98,14 +112,20 @@ class _StatisticsState extends State<Statistics> {
         ),
         child: Column(
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+            if (isLoading)
+              LoadingAnimationWidget.staggeredDotsWave(
+                color: Colors.blue,
+                size: 24,
+              )
+            else
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
               ),
-            ),
             const SizedBox(height: 4),
             Text(
               subtitle,
@@ -147,6 +167,17 @@ class _StatisticsState extends State<Statistics> {
   }
 
   Widget _buildBarChart(DrinkingHistoryDataNotifier data) {
+    if (isLoading) {
+      return SizedBox(
+        height: 200,
+        child: Center(
+          child: LoadingAnimationWidget.staggeredDotsWave(
+            color: Colors.blue,
+            size: 40,
+          ),
+        ),
+      );
+    }
     final Map<int, int> hourlyMl = {};
 
     for (var entry in data.entries) {

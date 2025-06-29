@@ -15,10 +15,19 @@ class MainPage extends StatefulWidget {
 }
 
 class MainPageState extends State<MainPage> {
+  final GlobalKey<HomeState> homeKey = GlobalKey<HomeState>();
+  final GlobalKey<StatisticsState> statisticsKey = GlobalKey<StatisticsState>();
+  final GlobalKey<SettingsState> settingsKey = GlobalKey<SettingsState>();
+
+  late PageController _pageController;
+
   @override
   void initState() {
     super.initState();
 
+    _pageController = PageController();
+
+    // Automatically connect to the saved device after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _autoConnect();
     });
@@ -40,7 +49,7 @@ class MainPageState extends State<MainPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("✅ Connected to your device!"),
+              content: Text("Successfully connected to your device!"),
               backgroundColor: Colors.green,
               duration: Duration(seconds: 2),
             ),
@@ -53,9 +62,9 @@ class MainPageState extends State<MainPage> {
   int currentPage = 0;
 
   List<Widget> get pages => [
-        const Home(),
-        const Statistics(),
-        const Settings(),
+        Home(key: homeKey),
+        Statistics(key: statisticsKey),
+        Settings(key: settingsKey),
       ];
 
   String get appBarTitle {
@@ -71,6 +80,32 @@ class MainPageState extends State<MainPage> {
     }
   }
 
+  void _onPageTap(int value) {
+    _pageController.animateToPage(
+      value,
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _onPageChanged(int value) {
+    setState(() {
+      currentPage = value;
+    });
+
+    switch (value) {
+      case 0: // Home
+        homeKey.currentState?.refresh();
+        break;
+      case 1: // Statistics
+        statisticsKey.currentState?.refresh();
+        break;
+      case 2: // Settings
+        settingsKey.currentState?.refresh();
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,14 +117,15 @@ class MainPageState extends State<MainPage> {
         centerTitle: true,
         backgroundColor: Colors.white,
       ),
-      body: IndexedStack(index: currentPage, children: pages),
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: _onPageChanged,
+        children: pages,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentPage,
-        onTap: (value) {
-          setState(() {
-            currentPage = value;
-          });
-        },
+        onTap: _onPageTap,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
           BottomNavigationBarItem(
