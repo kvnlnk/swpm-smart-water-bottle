@@ -6,6 +6,7 @@ import 'package:swpm_flutter_app/pages/settings.dart';
 import 'package:swpm_flutter_app/services/bluetooth/ble_service.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 import 'package:swpm_flutter_app/store/user_data.dart';
+import 'package:swpm_flutter_app/utils/ui_refresher.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -15,12 +16,46 @@ class MainPage extends StatefulWidget {
 }
 
 class MainPageState extends State<MainPage> {
+  final GlobalKey<HomeState> homeKey = GlobalKey<HomeState>();
+  final GlobalKey<StatisticsState> statisticsKey = GlobalKey<StatisticsState>();
+  final GlobalKey<SettingsState> settingsKey = GlobalKey<SettingsState>();
+
+  late PageController _pageController;
+
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _autoConnect();
+      _setupUIRefreshListener();
+    });
+  }
+
+  void _refreshCurrentPage() {
+    switch (currentPage) {
+      case 0:
+        homeKey.currentState?.refresh();
+        break;
+      case 1:
+        statisticsKey.currentState?.refresh();
+        break;
+      case 2:
+        settingsKey.currentState?.refresh();
+        break;
+    }
+  }
+
+  void _setupUIRefreshListener() {
+    UIRefreshNotifier.instance.addListener(() {
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _refreshCurrentPage();
+          }
+        });
+      }
     });
   }
 
@@ -35,12 +70,11 @@ class MainPageState extends State<MainPage> {
     // Auto reconnect if no other devices are connected
     if (bluetoothStore.connectedCount == 0) {
       final success = await bleService.autoConnectToSavedDevice();
-
       if (success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("✅ Connected to your device!"),
+              content: Text("Successfully connected to your device!"),
               backgroundColor: Colors.green,
               duration: Duration(seconds: 2),
             ),
@@ -53,9 +87,9 @@ class MainPageState extends State<MainPage> {
   int currentPage = 0;
 
   List<Widget> get pages => [
-        const Home(),
-        const Statistics(),
-        const Settings(),
+        Home(key: homeKey),
+        Statistics(key: statisticsKey),
+        Settings(key: settingsKey),
       ];
 
   String get appBarTitle {
@@ -71,6 +105,23 @@ class MainPageState extends State<MainPage> {
     }
   }
 
+  void _onPageTap(int value) {
+    _pageController.animateToPage(
+      value,
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _onPageChanged(int value) {
+    setState(() {
+      currentPage = value;
+    });
+
+    // Manual refresh when changing pages
+    _refreshCurrentPage();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,14 +133,15 @@ class MainPageState extends State<MainPage> {
         centerTitle: true,
         backgroundColor: Colors.white,
       ),
-      body: IndexedStack(index: currentPage, children: pages),
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: _onPageChanged,
+        children: pages,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentPage,
-        onTap: (value) {
-          setState(() {
-            currentPage = value;
-          });
-        },
+        onTap: _onPageTap,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
           BottomNavigationBarItem(
@@ -103,5 +155,12 @@ class MainPageState extends State<MainPage> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    UIRefreshNotifier.instance.removeListener(() {});
+    super.dispose();
   }
 }

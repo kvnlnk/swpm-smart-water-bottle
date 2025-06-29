@@ -32,6 +32,10 @@ class SettingsState extends State<Settings> {
     _fetchUserData();
   }
 
+  Future<void> refresh() async {
+    await _fetchUserData();
+  }
+
   Future<void> _fetchUserData() async {
     final data = await SettingsService.fetchUserData();
     if (data == null) return;

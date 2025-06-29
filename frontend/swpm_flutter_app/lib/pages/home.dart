@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:swpm_flutter_app/services/settings_service.dart';
 import 'package:swpm_flutter_app/store/user_data.dart';
 import 'package:swpm_flutter_app/store/water_data.dart';
 import 'package:swpm_flutter_app/services/water_service.dart';
@@ -15,12 +17,26 @@ class Home extends StatefulWidget {
 
 class HomeState extends State<Home> {
   final WaterService waterService = WaterService();
+  late final UserDataNotifier store;
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    store = Provider.of<UserDataNotifier>(context, listen: false);
+    _fetchUserData();
     _loadWaterData();
+  }
+
+  Future<void> refresh() async {
+    await _loadWaterData();
+  }
+
+  Future<void> _fetchUserData() async {
+    final data = await SettingsService.fetchUserData();
+    if (data == null) return;
+
+    store.updateFromJson(data);
   }
 
   Future<void> _loadWaterData() async {
@@ -76,6 +92,8 @@ class HomeState extends State<Home> {
     );
 
     final waterDisplay = Container(
+      height: 160,
+      width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -83,33 +101,49 @@ class HomeState extends State<Home> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            "${consumed.toStringAsFixed(2)}L",
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: goalReached ? Colors.green : Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            "of your ${dailyGoal.toStringAsFixed(2)}L daily goal",
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "Achieved: $percentage%",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: goalReached ? Colors.green : Colors.black,
-            ),
-          ),
-        ],
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        switchInCurve: Curves.easeIn,
+        switchOutCurve: Curves.easeOut,
+        transitionBuilder: (child, animation) =>
+            FadeTransition(opacity: animation, child: child),
+        child: isLoading
+            ? Center(
+                key: const ValueKey('loader'),
+                child: LoadingAnimationWidget.staggeredDotsWave(
+                  color: Colors.blue,
+                  size: 48,
+                ),
+              )
+            : Column(
+                key: const ValueKey('content'),
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    "${consumed.toStringAsFixed(2)}L",
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: goalReached ? Colors.green : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "of your ${dailyGoal.toStringAsFixed(2)}L daily goal",
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    "Achieved: $percentage%",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: goalReached ? Colors.green : Colors.black,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
 

@@ -7,6 +7,7 @@ import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 import 'package:swpm_flutter_app/services/bluetooth/ble_operations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:swpm_flutter_app/store/user_data.dart';
+import 'package:swpm_flutter_app/utils/ui_refresher.dart';
 
 /// Main BLE service for device management and data handling
 /// Handles device connections, monitoring, and water data processing
@@ -190,6 +191,7 @@ class BleService {
       BluetoothDevice device, double amountMl, String timestamp) {
     WaterService wataterService = WaterService();
     wataterService.addDrink(amountMl.toInt(), timestamp);
+    UIRefreshNotifier.instance.refreshUI();
   }
 
   // Public API methods
