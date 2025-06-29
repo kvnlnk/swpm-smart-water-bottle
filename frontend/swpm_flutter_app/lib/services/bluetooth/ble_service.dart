@@ -18,7 +18,7 @@ class BleService {
 
   // Timer for periodic fetches
   Timer? _periodicFetchTimer;
-  static const Duration _fetchInterval = Duration(minutes: 1);
+  static const Duration _fetchInterval = Duration(seconds: 20);
 
   BleService(this._store, this._userStore) {
     // Store Listener hinzufügen um auf Connection Changes zu reagieren
@@ -75,11 +75,21 @@ class BleService {
     }
 
     try {
-      final result = await _waterService.fetchLastDrinkingTime();
-      if (result == null) {
+      final resultLastDrinkingTime =
+          await _waterService.fetchLastDrinkingTime();
+      final userData = await _waterService.fetchDailySummary();
+
+      if (resultLastDrinkingTime == null || userData == null) {
         return;
       }
 
+      final result = {
+        'DrinkReminderType': resultLastDrinkingTime['DrinkReminderType'],
+        'waterGoal': userData.goalAmountMl,
+        'currentWater': userData.totalAmountMl,
+      };
+
+      // Write the fetched data to the device
       BleOperations.writeDataToDevice(device, result);
     } catch (_) {}
   }
