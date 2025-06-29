@@ -94,13 +94,13 @@ class MainPageState extends State<MainPage> {
     });
 
     switch (value) {
-      case 0: // Home
+      case 0:
         homeKey.currentState?.refresh();
         break;
-      case 1: // Statistics
+      case 1:
         statisticsKey.currentState?.refresh();
         break;
-      case 2: // Settings
+      case 2:
         settingsKey.currentState?.refresh();
         break;
     }
