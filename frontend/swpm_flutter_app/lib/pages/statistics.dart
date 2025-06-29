@@ -88,50 +88,66 @@ class StatisticsState extends State<Statistics> {
     );
   }
 
-  Widget _buildTopBox(
-      {required String title,
-      required String subtitle,
-      bool left = false,
-      bool isLoading = false}) {
+  Widget _buildTopBox({
+    required String title,
+    required String subtitle,
+    bool left = false,
+    bool isLoading = false,
+  }) {
     return Expanded(
-      child: Container(
-        margin: left
-            ? const EdgeInsets.only(right: 8)
-            : const EdgeInsets.only(left: 8),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: Color.fromARGB(29, 0, 0, 0),
-              blurRadius: 10,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            if (isLoading)
-              LoadingAnimationWidget.staggeredDotsWave(
-                color: Colors.blue,
-                size: 24,
-              )
-            else
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+      child: SizedBox(
+        height: 100,
+        child: Container(
+          margin: left
+              ? const EdgeInsets.only(right: 8)
+              : const EdgeInsets.only(left: 8),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: const [
+              BoxShadow(
+                color: Color.fromARGB(29, 0, 0, 0),
+                blurRadius: 10,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                height: 28,
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, animation) =>
+                        FadeTransition(opacity: animation, child: child),
+                    child: isLoading
+                        ? LoadingAnimationWidget.staggeredDotsWave(
+                            key: const ValueKey('loader'),
+                            color: Colors.blue,
+                            size: 24,
+                          )
+                        : Text(
+                            title,
+                            key: const ValueKey('title'),
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                  ),
                 ),
               ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -167,17 +183,6 @@ class StatisticsState extends State<Statistics> {
   }
 
   Widget _buildBarChart(DrinkingHistoryDataNotifier data) {
-    if (isLoading) {
-      return SizedBox(
-        height: 200,
-        child: Center(
-          child: LoadingAnimationWidget.staggeredDotsWave(
-            color: Colors.blue,
-            size: 40,
-          ),
-        ),
-      );
-    }
     final Map<int, int> hourlyMl = {};
 
     for (var entry in data.entries) {
@@ -196,67 +201,94 @@ class StatisticsState extends State<Statistics> {
       maxAmount =
           (maxEntry * 1.2).ceil(); // Add 20% padding and round up for UX
     }
-
     final yAxisSteps = 4;
     final yStepValue = (maxAmount / yAxisSteps).ceil();
 
-    return SizedBox(
-      height: 200,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // y-axes
-          Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(yAxisSteps + 1, (i) {
-              final label = yStepValue * (yAxisSteps - i);
-              return SizedBox(
-                height: 200 / (yAxisSteps + 1),
-                child: Text('$label ml', style: const TextStyle(fontSize: 10)),
-              );
-            }),
-          ),
-          const SizedBox(width: 12),
-          // x-axes
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 4),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeIn,
+      switchOutCurve: Curves.easeOut,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+      child: isLoading
+          ? SizedBox(
+              key: const ValueKey('loader'),
+              height: 200,
+              child: Center(
+                child: LoadingAnimationWidget.staggeredDotsWave(
+                  color: Colors.blue,
+                  size: 40,
+                ),
+              ),
+            )
+          : SizedBox(
+              key: const ValueKey('chart'),
+              height: 200,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
-                children: hours.map((hour) {
-                  final amount = hourlyMl[hour]!;
-                  final heightFactor = maxAmount > 0 ? amount / maxAmount : 0.0;
-
-                  return Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: FractionallySizedBox(
-                            heightFactor: heightFactor,
-                            alignment: Alignment.bottomCenter,
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 2),
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 111, 140, 255),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                          ),
+                children: [
+                  // y-axes
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: List.generate(yAxisSteps + 1, (i) {
+                      final label = yStepValue * (yAxisSteps - i);
+                      return SizedBox(
+                        height: 200 / (yAxisSteps + 1),
+                        child: Text(
+                          '$label ml',
+                          style: const TextStyle(fontSize: 10),
                         ),
-                        const SizedBox(height: 4),
-                        Text('$hour h',
-                            style: TextStyle(
-                                fontSize: 10, color: Colors.grey[600])),
-                      ],
+                      );
+                    }),
+                  ),
+                  const SizedBox(width: 12),
+                  // x-axes
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: hours.map((hour) {
+                          final amount = hourlyMl[hour]!;
+                          final heightFactor =
+                              maxAmount > 0 ? amount / maxAmount : 0.0;
+
+                          return Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Expanded(
+                                  child: FractionallySizedBox(
+                                    heightFactor: heightFactor,
+                                    alignment: Alignment.bottomCenter,
+                                    child: Container(
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color.fromARGB(
+                                            255, 111, 140, 255),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '$hour h',
+                                  style: TextStyle(
+                                      fontSize: 10, color: Colors.grey[600]),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     ),
-                  );
-                }).toList(),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
-      ),
     );
   }
 
