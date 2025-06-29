@@ -38,25 +38,22 @@ class ProfileTile extends StatelessWidget {
       title: 'Profile',
       children: [
         buildReadOnlyTile("Username", username),
-        _buildProfileTile(context, "Weight", weight, 0.0, 125.0, "kg"),
-        _buildProfileTile(context, "Height", height, 0.0, 200.0, "cm"),
+        _buildProfileTile(context, "Weight", weight ?? 80.0, 0.0, 125.0, "kg"),
+        _buildProfileTile(context, "Height", height ?? 170.0, 0.0, 200.0, "cm"),
       ],
     );
   }
 
   Widget _buildProfileTile(BuildContext context, String title,
-      double? currentValue, double min, double max, String unit) {
+      double currentValue, double min, double max, String unit) {
     return buildListTile(
-      title: title,
-      trailing: currentValue != null
-          ? buildTiledContainer(
-              displayValue: "${currentValue.toStringAsFixed(2)} $unit",
-              onTap: () => _showTargetDialog(
-                  context, title, currentValue, min, max, unit),
-              background: const Color.fromARGB(33, 22, 135, 188),
-            )
-          : const Text("–"),
-    );
+        title: title,
+        trailing: buildTiledContainer(
+          displayValue: "${currentValue.toStringAsFixed(2)} $unit",
+          onTap: () =>
+              _showTargetDialog(context, title, currentValue, min, max, unit),
+          background: const Color.fromARGB(33, 22, 135, 188),
+        ));
   }
 
   void _showTargetDialog(BuildContext context, String title,
