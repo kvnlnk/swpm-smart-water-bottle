@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'package:swpm_flutter_app/pages/main_page.dart';
 import 'package:swpm_flutter_app/pages/sign_in.dart';
+import 'package:swpm_flutter_app/services/bluetooth/ble_service.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
 
 import 'package:swpm_flutter_app/store/user_data.dart';
@@ -25,6 +26,14 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => WaterDataNotifier()),
         ChangeNotifierProvider(create: (_) => DrinkingHistoryDataNotifier()),
         ChangeNotifierProvider(create: (_) => BluetoothDeviceDataNotifier()),
+        // BLE Service Provider for singleton access
+        Provider<BleService>(
+          create: (context) => BleService.getInstance(
+            context.read<BluetoothDeviceDataNotifier>(),
+            context.read<UserDataNotifier>(),
+          ),
+          dispose: (context, bleService) => {},
+        ),
       ],
       child: const MyApp(),
     ),

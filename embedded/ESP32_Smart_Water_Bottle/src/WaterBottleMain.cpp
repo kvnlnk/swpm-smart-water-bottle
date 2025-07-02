@@ -213,7 +213,10 @@ private:
   void handleWaterGoal(const JsonDocument& doc) {
     int receivedWaterGoal = doc["waterGoal"];
     if (waterGoal != receivedWaterGoal) {
-        waterGoal = receivedWaterGoal;
+      waterGoal = receivedWaterGoal;
+      if (isConnected && timeSyncConfirmed && !statusDisplayActive) {
+        showWaterInfo();
+      }
     }
   }
     

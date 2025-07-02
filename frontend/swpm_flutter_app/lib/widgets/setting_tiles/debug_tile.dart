@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:swpm_flutter_app/models/device.dart';
 import 'package:swpm_flutter_app/services/bluetooth/ble_service.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
-import 'package:swpm_flutter_app/store/user_data.dart';
 
 class DebugTile extends StatelessWidget {
   final Widget Function({required String title, required List<Widget> children})
@@ -129,13 +128,10 @@ class DebugTile extends StatelessWidget {
 
   Future<void> _sendCommand(
       BuildContext context, Device device, Map<String, dynamic> data) async {
-    final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
-    final userStore = context.read<UserDataNotifier>();
-
+    final bleService = Provider.of<BleService>(context, listen: false);
     if (device.bluetoothDevice != null) {
       try {
-        await BleService(bluetoothStore, userStore)
-            .writeDataToDevice(device.bluetoothDevice!, data);
+        await bleService.writeDataToDevice(device.bluetoothDevice!, data);
       } catch (_) {}
     }
   }

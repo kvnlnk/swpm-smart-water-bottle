@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:swpm_flutter_app/services/bluetooth/bluetooth_device_extension.dart';
 import 'package:swpm_flutter_app/services/water_service.dart';
@@ -9,35 +8,75 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:swpm_flutter_app/store/user_data.dart';
 import 'package:swpm_flutter_app/utils/ui_refresher.dart';
 
-/// Main BLE service for device management and data handling
-/// Handles device connections, monitoring, and water data processing
+/// Singleton BLE service for device management and data handling
+/// Ensures only one instance exists to prevent multiple timers/fetches
 class BleService {
+  // Singleton pattern
+  static BleService? _instance;
+  static BleService getInstance(
+      BluetoothDeviceDataNotifier store, UserDataNotifier userStore) {
+    _instance ??= BleService._internal(store, userStore);
+    return _instance!;
+  }
+
+  // Private constructor
+  BleService._internal(this._store, this._userStore) {
+    _initialize();
+  }
+
   final BluetoothDeviceDataNotifier _store;
   final UserDataNotifier _userStore;
   final WaterService _waterService = WaterService();
+  Set<String> _connectedDeviceIds = <String>{};
 
-  // Timer for periodic fetches
+  // Tracking variables
+  bool _isInitialized = false;
   Timer? _periodicFetchTimer;
-  static const Duration _fetchInterval = Duration(seconds: 20);
+  static const Duration _fetchInterval = Duration(seconds: 10);
 
-  BleService(this._store, this._userStore) {
-    // Store Listener hinzufügen um auf Connection Changes zu reagieren
-    // Store listener to react to connection changes so we can start/stop periodic fetches
+  // Data handling with UI refresh throttling
+  DateTime? _lastUIRefresh;
+  static const Duration _minRefreshInterval = Duration(seconds: 2);
+
+  void _initialize() {
+    if (_isInitialized) {
+      return;
+    }
+
     _store.addListener(_onStoreChanged);
     _userStore.addListener(_onNotificationPermissionChanged);
+    _isInitialized = true;
   }
 
-  // Will only be called if store changes
+  // Connection state management
   void _onStoreChanged() {
-    if (_store.hasConnectedDevices) {
-      _startPeriodicFetch();
-    } else {
-      _stopPeriodicFetch();
+    Set<String> currentConnectedIds = _store.devices
+        .where((d) => d.isConnected && d.bluetoothDevice != null)
+        .map((d) => d.bluetoothDevice!.remoteId.str)
+        .toSet();
+
+    // Simple string comparison for set equality
+    List<String> currentList = currentConnectedIds.toList();
+    currentList.sort();
+    String currentStr = currentList.join(',');
+    List<String> previousList = _connectedDeviceIds.toList();
+    previousList.sort();
+    String previousStr = previousList.join(',');
+
+    bool connectionChanged = currentStr != previousStr;
+
+    if (connectionChanged) {
+      if (currentConnectedIds.isNotEmpty) {
+        _startPeriodicFetch();
+      } else {
+        _stopPeriodicFetch();
+      }
+
+      _connectedDeviceIds = currentConnectedIds;
     }
   }
 
   void _onNotificationPermissionChanged() {
-    // Perform one fetch immediately if notifications are enabled to ensure data is up-to-date
     if (_userStore.notificationsEnabled == true ||
         _userStore.notificationsEnabled == false) {
       for (var deviceData in _store.devices) {
@@ -48,6 +87,7 @@ class BleService {
     }
   }
 
+  // Timer management with safety checks
   void _startPeriodicFetch() {
     if (_periodicFetchTimer?.isActive == true) {
       return;
@@ -143,14 +183,6 @@ class BleService {
     _store.connectionSubscriptions.clear();
   }
 
-  // ignore: unused_element
-  void _cancelAllDataSubscriptions() {
-    for (var subscription in _store.dataSubscriptions.values) {
-      subscription.cancel();
-    }
-    _store.dataSubscriptions.clear();
-  }
-
   void _cancelDataSubscription(String deviceId) {
     _store.dataSubscriptions[deviceId]?.cancel();
     _store.dataSubscriptions.remove(deviceId);
@@ -173,7 +205,6 @@ class BleService {
     }
   }
 
-  // Data handling
   void _handleReceivedData(BluetoothDevice device, Map<String, dynamic> data) {
     _store.updateDeviceData(device, data);
 
@@ -199,9 +230,16 @@ class BleService {
 
   void _onWaterDataReceived(
       BluetoothDevice device, double amountMl, String timestamp) {
-    WaterService wataterService = WaterService();
-    wataterService.addDrink(amountMl.toInt(), timestamp);
-    UIRefreshNotifier.instance.refreshUI();
+    WaterService waterService = WaterService();
+    waterService.addDrink(amountMl.toInt(), timestamp);
+
+    // Throttled UI refresh
+    final now = DateTime.now();
+    if (_lastUIRefresh == null ||
+        now.difference(_lastUIRefresh!) > _minRefreshInterval) {
+      UIRefreshNotifier.instance.refreshUI();
+      _lastUIRefresh = now;
+    }
   }
 
   // Public API methods
@@ -216,14 +254,12 @@ class BleService {
     _store.addOrUpdateDevice(bluetoothDevice);
 
     _startMonitoringDevice(bluetoothDevice);
-    // Automatically subscribe to data after connection
     await _subscribeToDeviceData(bluetoothDevice);
   }
 
   void removeConnectedDevice(BluetoothDevice bluetoothDevice) async {
     String deviceId = bluetoothDevice.remoteId.str;
 
-    // Unsubscribe from data before disconnecting
     await BleOperations.unsubscribeFromWaterSensorData(bluetoothDevice);
     _cancelDataSubscription(deviceId);
 
@@ -243,7 +279,48 @@ class BleService {
     _store.connectionSubscriptions.remove(deviceId);
   }
 
-  // Sync with Flutter Blue Plus
+  // Auto-connect functionality
+  Future<bool> autoConnectToSavedDevice() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? remoteId = prefs.getString('saved_device_id');
+    final String? deviceName = prefs.getString('saved_device_name');
+
+    if (remoteId == null) return false;
+
+    var device = BluetoothDevice.fromId(remoteId);
+    await device.connectAndUpdateStream();
+
+    _store.addOrUpdateDevice(device);
+    _store.updateDeviceName(device, deviceName);
+    _startMonitoringDevice(device);
+    await _subscribeToDeviceData(device);
+
+    return true;
+  }
+
+  Future<void> saveDeviceForAutoConnect(BluetoothDevice device) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('saved_device_id', device.remoteId.str);
+
+    String deviceName = device.platformName.isNotEmpty
+        ? device.platformName
+        : device.advName.isNotEmpty
+            ? device.advName
+            : 'Unknown Device';
+
+    await prefs.setString('saved_device_name', deviceName);
+  }
+
+  Future<void> removeSavedDeviceData(BluetoothDevice device) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? savedDeviceId = prefs.getString('saved_device_id');
+
+    if (savedDeviceId == device.remoteId.str) {
+      await prefs.remove('saved_device_id');
+      await prefs.remove('saved_device_name');
+    }
+  }
+
   void syncWithFlutterBluePlus() {
     List<BluetoothDevice> actualConnectedDevices =
         FlutterBluePlus.connectedDevices;
@@ -306,54 +383,21 @@ class BleService {
     _stopPeriodicFetch();
   }
 
-  // Auto-connect functionality
-  Future<bool> autoConnectToSavedDevice() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? remoteId = prefs.getString('saved_device_id');
-    final String? deviceName = prefs.getString('saved_device_name');
-
-    if (remoteId == null) return false;
-
-    var device = BluetoothDevice.fromId(remoteId);
-    await device.connectAndUpdateStream();
-
-    _store.addOrUpdateDevice(device);
-    _store.updateDeviceName(device, deviceName);
-    _startMonitoringDevice(device);
-    await _subscribeToDeviceData(device);
-
-    return true;
-  }
-
-  Future<void> saveDeviceForAutoConnect(BluetoothDevice device) async {
-    final prefs = await SharedPreferences.getInstance();
-    // Save device id
-    await prefs.setString('saved_device_id', device.remoteId.str);
-
-    // Save device name
-    String deviceName = device.platformName.isNotEmpty
-        ? device.platformName
-        : device.advName.isNotEmpty
-            ? device.advName
-            : 'Unknown Device';
-
-    await prefs.setString('saved_device_name', deviceName);
-  }
-
-  Future<void> removeSavedDeviceData(BluetoothDevice device) async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? savedDeviceId = prefs.getString('saved_device_id');
-
-    if (savedDeviceId == device.remoteId.str) {
-      await prefs.remove('saved_device_id');
-      await prefs.remove('saved_device_name');
-    }
-  }
-
+  // Cleanup
   void dispose() {
     _stopPeriodicFetch();
-    _store.removeListener(_onStoreChanged);
+
+    if (_isInitialized) {
+      _store.removeListener(_onStoreChanged);
+      _userStore.removeListener(_onNotificationPermissionChanged);
+    }
+
     _cancelAllConnectionSubscriptions();
-    _cancelAllDataSubscriptions();
+  }
+
+  // Singleton cleanup
+  static void resetInstance() {
+    _instance?.dispose();
+    _instance = null;
   }
 }
