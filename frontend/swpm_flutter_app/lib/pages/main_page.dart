@@ -5,7 +5,6 @@ import 'package:swpm_flutter_app/pages/statistics.dart';
 import 'package:swpm_flutter_app/pages/settings.dart';
 import 'package:swpm_flutter_app/services/bluetooth/ble_service.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
-import 'package:swpm_flutter_app/store/user_data.dart';
 import 'package:swpm_flutter_app/utils/ui_refresher.dart';
 
 class MainPage extends StatefulWidget {

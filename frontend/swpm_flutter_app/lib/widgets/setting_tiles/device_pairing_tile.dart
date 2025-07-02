@@ -6,7 +6,6 @@ import 'package:swpm_flutter_app/screens/scan_screen.dart';
 import 'package:swpm_flutter_app/services/bluetooth/ble_service.dart';
 import 'package:swpm_flutter_app/services/bluetooth/bluetooth_device_extension.dart';
 import 'package:swpm_flutter_app/store/bluetooth_device_data.dart';
-import 'package:swpm_flutter_app/store/user_data.dart';
 
 class DevicePairingTile extends StatelessWidget {
   final Widget Function({required String title, required List<Widget> children})
