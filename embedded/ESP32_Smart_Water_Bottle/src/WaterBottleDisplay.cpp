@@ -125,7 +125,7 @@ void showWaterInfo() {
 
   // Show current water amount and goal / calculate text width to center it
   char buf[32];
-  snprintf(buf, sizeof(buf), "%.0f L / %.0f L", currentWater / 1000.0, waterGoal / 1000.0);
+  snprintf(buf, sizeof(buf), "%.1f L / %.1f L", currentWater / 1000.0, waterGoal / 1000.0);
   String waterText = String(buf);
   int waterTextWidth = waterText.length() * 12; 
   tft.setCursor(centerX - (waterTextWidth / 2), 120);
