@@ -60,12 +60,10 @@ class MainPageState extends State<MainPage> {
   }
 
   Future<void> _autoConnect() async {
+    final bleService = Provider.of<BleService>(context, listen: false);
     final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
-    final userStore = context.read<UserDataNotifier>();
 
     await Future.delayed(Duration(milliseconds: 500));
-
-    final bleService = BleService(bluetoothStore, userStore);
 
     // Auto reconnect if no other devices are connected
     if (bluetoothStore.connectedCount == 0) {

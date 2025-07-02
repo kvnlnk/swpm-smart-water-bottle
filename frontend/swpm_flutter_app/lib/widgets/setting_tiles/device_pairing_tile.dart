@@ -182,13 +182,12 @@ class DevicePairingTile extends StatelessWidget {
 
   Future<void> _performDisconnect(
       BuildContext context, BluetoothDevice device) async {
-    final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
-    final userStore = context.read<UserDataNotifier>();
+    final bleService = Provider.of<BleService>(context, listen: false);
     try {
       await device.disconnectAndUpdateStream();
 
-      BleService(bluetoothStore, userStore).removeConnectedDevice(device);
-      BleService(bluetoothStore, userStore).removeSavedDeviceData(device);
+      bleService.removeConnectedDevice(device);
+      bleService.removeSavedDeviceData(device);
     } catch (_) {}
   }
 }

@@ -129,13 +129,10 @@ class DebugTile extends StatelessWidget {
 
   Future<void> _sendCommand(
       BuildContext context, Device device, Map<String, dynamic> data) async {
-    final bluetoothStore = context.read<BluetoothDeviceDataNotifier>();
-    final userStore = context.read<UserDataNotifier>();
-
+    final bleService = Provider.of<BleService>(context, listen: false);
     if (device.bluetoothDevice != null) {
       try {
-        await BleService(bluetoothStore, userStore)
-            .writeDataToDevice(device.bluetoothDevice!, data);
+        await bleService.writeDataToDevice(device.bluetoothDevice!, data);
       } catch (_) {}
     }
   }
