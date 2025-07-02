@@ -8,9 +8,9 @@ public class Endpoint : EndpointWithoutRequest<Response>
     private readonly Supabase.Client _supabase;
     private readonly ILogger<Endpoint> _logger;
     
-    private const int REMINDER_INTERVAL_MINUTES = 120;
-
-
+    private const int NormalReminderIntervalMinutes = 180;
+    private const int ImportantReminderIntervalMinutes = 300;
+    
     public Endpoint(Supabase.Client supabase, ILogger<Endpoint> logger)
     {
         _supabase = supabase;
@@ -43,7 +43,12 @@ public class Endpoint : EndpointWithoutRequest<Response>
             .Limit(1)
             .Get(cancellationToken: ct);
         
-        if (lastDrink.Model != null)
+        var user = await _supabase
+            .From<Entities.User>()
+            .Where(x => x.Id == userId)
+            .Single(ct);
+        
+        if (lastDrink.Model != null && user != null)
         {
             _logger.LogInformation("Retrieved users last drinking time: {lastDrink}",  lastDrink.Model.CreatedAt);
             var response = new Response();
@@ -52,16 +57,31 @@ public class Endpoint : EndpointWithoutRequest<Response>
             
             response.LastDrinkingTime = lastDrinkTime;
             response.MinutesSinceLastDrink = minutesSince;
-            
 
-            response.ShouldSendReminder = minutesSince >= REMINDER_INTERVAL_MINUTES;
-            
-            // Only add reminder message if last drinking time > 120 minutes
-            if (response.ShouldSendReminder)
+            if (user.NotificationsEnabled)
             {
-                response.ReminderMessage = $"Du hast seit {minutesSince} Minuten nichts getrunken. Zeit für Wasser!";
+                switch (minutesSince)
+                {
+                    case >= ImportantReminderIntervalMinutes:
+                        response.DrinkReminderType = DrinkReminderType.Important;
+                        response.ShouldSendReminder = true;
+                        break;
+                    case >= NormalReminderIntervalMinutes:
+                        response.DrinkReminderType = DrinkReminderType.Normal;
+                        response.ShouldSendReminder = true;
+                        break;
+                    default:
+                        response.DrinkReminderType = DrinkReminderType.None;
+                        response.ShouldSendReminder = false;
+                        break;
+                }
             }
-            
+            else
+            {
+                response.DrinkReminderType = DrinkReminderType.Off;
+                response.ShouldSendReminder = false;
+            }
+
             await SendOkAsync(response, ct);
         }
         else
@@ -72,7 +92,7 @@ public class Endpoint : EndpointWithoutRequest<Response>
                 LastDrinkingTime = null,
                 MinutesSinceLastDrink = 0,
                 ShouldSendReminder = true,
-                ReminderMessage = "Zeit für dein erstes Wasser heute!"
+                DrinkReminderType = DrinkReminderType.Important,
             }, 200, ct);
         }
     }
