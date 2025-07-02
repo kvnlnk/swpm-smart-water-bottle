@@ -66,5 +66,7 @@
 			</array>
 		</dict>
 	</dict>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>This app needs access to Bluetooth to function properly.</string>
 </dict>
 </plist>
