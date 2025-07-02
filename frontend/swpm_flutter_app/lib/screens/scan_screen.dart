@@ -98,7 +98,7 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
-  Future onRefresh() {
+  Future<void> onRefresh() {
     final bleService = Provider.of<BleService>(context, listen: false);
     if (_isScanning == false) {
       FlutterBluePlus.startScan(timeout: const Duration(seconds: 15));
