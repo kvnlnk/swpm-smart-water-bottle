@@ -23,8 +23,8 @@ The Smart Water Bottle System consists of an ESP32-based hardware solution with 
 #### Configure Supabase:
    - Create a new project on Supabase.
    - Set up the database schema as per the [Supabase schema](./database_schema.sql).
-   ![alt text](image.png)
-
+   - View the [database design](./database_design.png) for reference.
+   ![alt text](supabase_database_structure.png)
 ### Commit Convention
 
 This repository uses [Conventional Commits](https://www.conventionalcommits.org/) to maintain a consistent and readable commit history. Please follow the format below when making commits.
