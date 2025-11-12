@@ -4,6 +4,8 @@ An intelligent water bottle system for monitoring and promoting healthy drinking
 ## Project Overview
 The Smart Water Bottle System consists of an ESP32-based hardware solution with flow sensor and display, a backend for data management and user analysis, plus a frontend for android phones created with Flutter.
 
+<img width="201" height="476" alt="grafik" src="https://github.com/user-attachments/assets/04981de5-1a75-4b9c-b12c-40995caf1dfa" />
+
 
 ### Main Features
 
